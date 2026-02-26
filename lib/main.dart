@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'screens/home_screen.dart';
-import 'models/game_state.dart';
+import 'package:fouralot/screens/home_screen.dart';
+import 'package:fouralot/models/game_state.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

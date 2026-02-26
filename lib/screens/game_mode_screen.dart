@@ -5,8 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fouralot/models/game_models.dart';
 import 'package:fouralot/services/network_service.dart';
-
-import 'game_screen.dart';
+import 'package:fouralot/screens/game_screen.dart';
 
 class GameModeScreen extends StatefulWidget {
   final ConnectionMode connectionMode;
@@ -31,15 +30,13 @@ class _GameModeScreenState extends State<GameModeScreen> {
 
   bool get _isOnlineClient {
     if (widget.networkService == null) return false;
-    final isOnline = widget.connectionMode == ConnectionMode.lan ||
-        widget.connectionMode == ConnectionMode.internet;
+    final isOnline = widget.connectionMode == ConnectionMode.lan || widget.connectionMode == ConnectionMode.internet;
     return isOnline && !widget.networkService!.isHost;
   }
 
   bool get _isOnlineHost {
     if (widget.networkService == null) return false;
-    final isOnline = widget.connectionMode == ConnectionMode.lan ||
-        widget.connectionMode == ConnectionMode.internet;
+    final isOnline = widget.connectionMode == ConnectionMode.lan || widget.connectionMode == ConnectionMode.internet;
     return isOnline && widget.networkService!.isHost;
   }
 
@@ -96,8 +93,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back_ios,
-                          color: Colors.white54),
+                      child: const Icon(Icons.arrow_back_ios, color: Colors.white54),
                     ),
                     const SizedBox(width: 16),
                     Text(
@@ -112,10 +108,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
                   ],
                 ),
                 const SizedBox(height: 40),
-                if (_isOnlineClient)
-                  _buildClientView()
-                else
-                  _buildSelectableModes(context),
+                if (_isOnlineClient) _buildClientView() else _buildSelectableModes(context),
               ],
             ),
           ),
@@ -132,8 +125,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
           title: 'NORMALE',
           icon: '⬇️',
           color: const Color(0xFFFF6B6B),
-          description:
-              'Le regole classiche del Forza 4. Inserisci le pedine dall\'alto e forma una fila di 4.',
+          description: 'Le regole classiche del Forza 4. Inserisci le pedine dall\'alto e forma una fila di 4.',
           onTap: () => _startGame(context, GameMode.normal),
         ),
         const SizedBox(height: 16),
@@ -142,8 +134,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
           title: '4 DIREZIONI',
           icon: '↔️',
           color: const Color(0xFF4ECDC4),
-          description:
-              'Inserisci le pedine da qualsiasi lato della griglia toccando le frecce ↑↓←→. La pedina scivola fino al lato opposto o a un\'altra pedina.',
+          description: 'Inserisci le pedine da qualsiasi lato della griglia toccando le frecce ↑↓←→. La pedina scivola fino al lato opposto o a un\'altra pedina.',
           onTap: () => _startGame(context, GameMode.fourDirections),
         ),
         const SizedBox(height: 16),
@@ -152,8 +143,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
           title: 'BLOCCHI',
           icon: '🧱',
           color: const Color(0xFFFFD700),
-          description:
-              'Come 4 Direzioni (usa le frecce ↑↓←→), ma ogni giocatore ha 3 blocchi da posizionare al posto di una mossa. Le pedine si fermano anche sui blocchi.',
+          description: 'Come 4 Direzioni (usa le frecce ↑↓←→), ma ogni giocatore ha 3 blocchi da posizionare al posto di una mossa. Le pedine si fermano anche sui blocchi.',
           onTap: () => _startGame(context, GameMode.blocks),
         ),
       ],
@@ -173,37 +163,23 @@ class _GameModeScreenState extends State<GameModeScreen> {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-                color:
-                    (selectedData == null ? Colors.white24 : selectedData.color)
-                        .withValues(alpha: 0.4)),
+            border: Border.all(color: (selectedData == null ? Colors.white24 : selectedData.color).withValues(alpha: 0.4)),
           ),
           child: selectedData == null
               ? const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('In attesa che l\'host scelga la modalità...',
-                        style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    Text('In attesa che l\'host scelga la modalità...', style: TextStyle(color: Colors.white70, fontSize: 14)),
                     SizedBox(height: 12),
-                    LinearProgressIndicator(
-                        minHeight: 6,
-                        color: Color(0xFFFFD700),
-                        backgroundColor: Colors.white10),
+                    LinearProgressIndicator(minHeight: 6, color: Color(0xFFFFD700), backgroundColor: Colors.white10),
                   ],
                 )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(selectedData.title,
-                        style: GoogleFonts.orbitron(
-                            color: selectedData.color,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 2)),
+                    Text(selectedData.title, style: GoogleFonts.orbitron(color: selectedData.color, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 2)),
                     const SizedBox(height: 10),
-                    Text(selectedData.description,
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 13, height: 1.4)),
+                    Text(selectedData.description, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
                   ],
                 ),
         ).animate().fadeIn(duration: 350.ms),
@@ -218,13 +194,11 @@ class _GameModeScreenState extends State<GameModeScreen> {
               disabledBackgroundColor: Colors.white12,
               disabledForegroundColor: Colors.white38,
               padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             child: Text(
               'ACCETTA MODALITÀ',
-              style: GoogleFonts.orbitron(
-                  fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 2),
+              style: GoogleFonts.orbitron(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 2),
             ),
           ),
         ),
@@ -247,8 +221,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
   }
 
   void _openGame(GameMode mode) {
-    final config =
-        GameConfig(connectionMode: widget.connectionMode, gameMode: mode);
+    final config = GameConfig(connectionMode: widget.connectionMode, gameMode: mode);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -267,22 +240,19 @@ class _GameModeScreenState extends State<GameModeScreen> {
         return const _ModeData(
           title: 'NORMALE',
           color: Color(0xFFFF6B6B),
-          description:
-              'Le regole classiche del Forza 4. Inserisci le pedine dall\'alto e forma una fila di 4.',
+          description: 'Le regole classiche del Forza 4. Inserisci le pedine dall\'alto e forma una fila di 4.',
         );
       case GameMode.fourDirections:
         return const _ModeData(
           title: '4 DIREZIONI',
           color: Color(0xFF4ECDC4),
-          description:
-              'Inserisci le pedine da qualsiasi lato della griglia toccando le frecce ↑↓←→. La pedina scivola fino al lato opposto o a un\'altra pedina.',
+          description: 'Inserisci le pedine da qualsiasi lato della griglia toccando le frecce ↑↓←→. La pedina scivola fino al lato opposto o a un\'altra pedina.',
         );
       case GameMode.blocks:
         return const _ModeData(
           title: 'BLOCCHI',
           color: Color(0xFFFFD700),
-          description:
-              'Come 4 Direzioni (usa le frecce ↑↓←→), ma ogni giocatore ha 3 blocchi da posizionare al posto di una mossa. Le pedine si fermano anche sui blocchi.',
+          description: 'Come 4 Direzioni (usa le frecce ↑↓←→), ma ogni giocatore ha 3 blocchi da posizionare al posto di una mossa. Le pedine si fermano anche sui blocchi.',
         );
     }
   }
@@ -360,8 +330,7 @@ class _ModeCardState extends State<_ModeCard> {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
-                  child:
-                      Text(widget.icon, style: const TextStyle(fontSize: 28)),
+                  child: Text(widget.icon, style: const TextStyle(fontSize: 28)),
                 ),
               ),
               const SizedBox(width: 16),
@@ -381,8 +350,7 @@ class _ModeCardState extends State<_ModeCard> {
                     const SizedBox(height: 6),
                     Text(
                       widget.description,
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 12, height: 1.4),
+                      style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
                     ),
                   ],
                 ),
@@ -391,11 +359,7 @@ class _ModeCardState extends State<_ModeCard> {
               Icon(Icons.play_arrow_rounded, color: widget.color, size: 28),
             ],
           ),
-        )
-            .animate()
-            .fadeIn(
-                delay: Duration(milliseconds: widget.delay), duration: 400.ms)
-            .slideX(begin: 0.2, end: 0),
+        ).animate().fadeIn(delay: Duration(milliseconds: widget.delay), duration: 400.ms).slideX(begin: 0.2, end: 0),
       ),
     );
   }

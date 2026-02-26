@@ -96,12 +96,12 @@ class AiService {
     }
 
     // Try all 4-direction inserts
-    for (final dir in Direction.values) {
-      final count = (dir == Direction.left || dir == Direction.right) ? rows : cols;
+    for (final side in Side.values) {
+      final count = (side == Side.left || side == Side.right) ? rows : cols;
       for (int i = 0; i < count; i++) {
         final board = _cloneBoard(gs.board);
-        if (!_simulateInsert(board, dir, i, aiPlayer)) continue;
-        tryMove(Move(row: dir.index, col: i, player: aiPlayer), board);
+        if (!_simulateInsert(board, side, i, aiPlayer)) continue;
+        tryMove(Move(row: side.index, col: i, player: aiPlayer), board);
       }
     }
 
@@ -129,27 +129,27 @@ class AiService {
 
   // ─── Board simulation helpers ─────────────────────────────────────────────
 
-  bool _simulateInsert(List<List<CellContent>> board, Direction dir, int index, int player) {
+  bool _simulateInsert(List<List<CellContent>> board, Side side, int index, int player) {
     final piece = player == 1 ? CellContent.player1 : CellContent.player2;
     int row, col, dr = 0, dc = 0;
 
-    switch (dir) {
-      case Direction.left:
+    switch (side) {
+      case Side.left:
         row = index;
         col = 0;
         dc = 1;
         break;
-      case Direction.right:
+      case Side.right:
         row = index;
         col = cols - 1;
         dc = -1;
         break;
-      case Direction.top:
+      case Side.top:
         col = index;
         row = 0;
         dr = 1;
         break;
-      case Direction.bottom:
+      case Side.bottom:
         col = index;
         row = rows - 1;
         dr = -1;

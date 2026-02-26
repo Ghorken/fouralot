@@ -2,14 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart' hide Direction;
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
 import 'package:fouralot/models/game_models.dart';
 import 'package:fouralot/models/game_state.dart';
 import 'package:fouralot/services/network_service.dart';
 import 'package:fouralot/services/ai_service.dart';
-
 import 'package:fouralot/widgets/game_board.dart';
 
 class GameScreen extends StatefulWidget {
@@ -82,14 +81,7 @@ class _GameScreenState extends State<GameScreen> {
 
     if (_blockMode) return;
 
-    bool ok;
-    if (widget.config.gameMode == GameMode.normal) {
-      ok = gs.dropInColumn(col);
-    } else {
-      ok = gs.insertFromSide(Direction.bottom, col);
-    }
-
-    if (ok) {
+    if (gs.dropInColumn(col)) {
       final move = Move(row: -1, col: col, player: widget.playerNumber);
       _sendMove(move);
       setState(() => _blockMode = false);
@@ -105,8 +97,7 @@ class _GameScreenState extends State<GameScreen> {
     if (gs.gameOver) return;
 
     if (_blockMode) {
-      final ok = gs.placeBlock(row, col);
-      if (ok) {
+      if (gs.placeBlock(row, col)) {
         _sendMove(Move(row: row, col: col, player: widget.playerNumber, isBlock: true));
         setState(() => _blockMode = false);
         if (_isAiMode) _scheduleAiMove();
@@ -135,14 +126,14 @@ class _GameScreenState extends State<GameScreen> {
       );
   }
 
-  void _handleDirectionInsert(Direction dir, int index) {
+  void _handleSidedInsert(Side side, int index) {
     if (!_isMyTurn) return;
     final gs = context.read<GameState>();
     if (gs.gameOver) return;
 
-    final ok = gs.insertFromSide(dir, index);
-    if (ok) {
-      _sendMove(Move(row: dir.index, col: index, player: widget.playerNumber));
+    final pos = gs.insertFromSide(side, index);
+    if (pos != null) {
+      _sendMove(Move(row: pos[0], col: pos[1], player: widget.playerNumber));
       if (_isAiMode) _scheduleAiMove();
     } else {
       _showInvalidMoveToast('Mossa non valida: riga/colonna piena');
@@ -170,13 +161,12 @@ class _GameScreenState extends State<GameScreen> {
     } else if (widget.config.gameMode == GameMode.normal) {
       gs.dropInColumn(move.col);
     } else {
-      // For 4-directions: move.row = dir.index, move.col = index
-      gs.insertFromSide(Direction.values[move.row], move.col);
+      // For 4-directions: move.row = side.index, move.col = index
+      gs.insertFromSide(Side.values[move.row], move.col);
     }
   }
 
-  /// Builds the board area. For non-normal modes uses [LayoutBuilder]
-  /// to compute exact per-cell dimensions so arrows are pixel-aligned.
+  /// Builds the board area. Uses [LayoutBuilder] to compute exact per-cell dimensions so arrows are pixel-aligned.
   Widget _buildBoardArea(GameState gs) {
     final bool isNormal = widget.config.gameMode == GameMode.normal;
     final bool enabled = _isMyTurn && !gs.gameOver;
@@ -208,10 +198,9 @@ class _GameScreenState extends State<GameScreen> {
               board: gs.board,
               winningCells: gs.winningCells,
               onColumnTap: _handleColumnTap,
-              onCellTap: _handleCellTap,
-              showColumnTap: true,
               blockMode: _blockMode,
               useAspectRatio: false,
+              gameMode: widget.config.gameMode,
             ),
           ),
         );
@@ -240,30 +229,34 @@ class _GameScreenState extends State<GameScreen> {
       final double cellH = rows > 0 ? boardH / rows : 0;
       final double hOff = (innerW - boardW) / 2;
 
-      Widget colArrow(IconData icon, int i, Direction dir) {
+      Widget colArrow(IconData icon, int i, Side side) {
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: enabled ? () => _handleDirectionInsert(dir, i) : null,
+          onTap: enabled ? () => _handleSidedInsert(side, i) : null,
           child: SizedBox(
             width: cellW,
             height: arrowH,
             child: Center(
-              child: Icon(icon, color: enabled ? const Color(0xFF4ECDC4) : Colors.white12, size: _kArrowIconSize),
+              child: Icon(
+                icon,
+                color: enabled ? const Color(0xFF4ECDC4) : Colors.white12,
+                size: _kArrowIconSize,
+              ),
             ),
           ),
         );
       }
 
-      Widget rowArrow(bool isLeft, int i) {
+      Widget rowArrow(IconData icon, int i, Side side) {
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: enabled ? () => _handleDirectionInsert(isLeft ? Direction.left : Direction.right, i) : null,
+          onTap: enabled ? () => _handleSidedInsert(side, i) : null,
           child: SizedBox(
             width: sideW,
             height: cellH,
             child: Center(
               child: Icon(
-                isLeft ? Icons.arrow_forward : Icons.arrow_back,
+                icon,
                 color: enabled ? const Color(0xFFFF6B6B) : Colors.white12,
                 size: _kArrowIconSize,
               ),
@@ -281,7 +274,7 @@ class _GameScreenState extends State<GameScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(width: sideW + hOff),
-                ...List.generate(cols, (i) => colArrow(Icons.arrow_downward, i, Direction.top)),
+                ...List.generate(cols, (i) => colArrow(Icons.arrow_downward, i, Side.top)),
                 SizedBox(width: sideW + hOff),
               ],
             ),
@@ -291,7 +284,7 @@ class _GameScreenState extends State<GameScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Column(children: List.generate(rows, (i) => rowArrow(true, i))),
+                Column(children: List.generate(rows, (i) => rowArrow(Icons.arrow_forward, i, Side.left))),
                 SizedBox(width: hOff),
                 SizedBox(
                   width: boardW,
@@ -299,15 +292,14 @@ class _GameScreenState extends State<GameScreen> {
                   child: GameBoard(
                     board: gs.board,
                     winningCells: gs.winningCells,
-                    onColumnTap: _handleColumnTap,
                     onCellTap: _handleCellTap,
-                    showColumnTap: false,
                     blockMode: _blockMode,
                     useAspectRatio: false,
+                    gameMode: widget.config.gameMode,
                   ),
                 ),
                 SizedBox(width: hOff),
-                Column(children: List.generate(rows, (i) => rowArrow(false, i))),
+                Column(children: List.generate(rows, (i) => rowArrow(Icons.arrow_back, i, Side.right))),
               ],
             ),
           ),
@@ -317,7 +309,7 @@ class _GameScreenState extends State<GameScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(width: sideW + hOff),
-                ...List.generate(cols, (i) => colArrow(Icons.arrow_upward, i, Direction.bottom)),
+                ...List.generate(cols, (i) => colArrow(Icons.arrow_upward, i, Side.bottom)),
                 SizedBox(width: sideW + hOff),
               ],
             ),

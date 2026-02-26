@@ -39,53 +39,50 @@ class GameState extends ChangeNotifier {
   /// Normal mode: drop in column (gravity from bottom)
   bool dropInColumn(int col) {
     if (gameOver) return false;
-    if (config?.gameMode == GameMode.normal || config?.gameMode == GameMode.fourDirections || config?.gameMode == GameMode.blocks) {
-      int row = _findLowestEmpty(col);
-      if (row == -1) return false;
-      _placeCell(row, col, currentPlayer == 1 ? CellContent.player1 : CellContent.player2);
-      return true;
-    }
-    return false;
+    int row = _findLowestEmpty(col);
+    if (row == -1) return false;
+    _placeCell(row, col, currentPlayer == 1 ? CellContent.player1 : CellContent.player2);
+    return true;
   }
 
-  /// 4 directions: insert from any side, piece slides until it hits a wall or another piece/block
-  bool insertFromSide(Direction dir, int index) {
-    if (gameOver) return false;
+  /// 4 directions and blocks: insert from any side, piece slides until it hits a wall or another piece/block
+  List<int>? insertFromSide(Side side, int index) {
+    if (gameOver) return null;
 
     int row = -1, col = -1;
-    int dr = 0, dc = 0;
+    int slideRowDirection = 0, slideColDirection = 0;
 
-    switch (dir) {
-      case Direction.left: // from left, slides right
+    switch (side) {
+      case Side.left: // from left, slides right
         row = index;
         col = 0;
-        dc = 1;
+        slideColDirection = 1;
         break;
-      case Direction.right: // from right, slides left
+      case Side.right: // from right, slides left
         row = index;
         col = cols - 1;
-        dc = -1;
+        slideColDirection = -1;
         break;
-      case Direction.top: // from top, slides down
+      case Side.top: // from top, slides down
         col = index;
         row = 0;
-        dr = 1;
+        slideRowDirection = 1;
         break;
-      case Direction.bottom: // from bottom, slides up
+      case Side.bottom: // from bottom, slides up
         col = index;
         row = rows - 1;
-        dr = -1;
+        slideRowDirection = -1;
         break;
     }
 
     // Find where to insert (entry must be empty)
-    if (board[row][col] != CellContent.empty) return false;
+    if (board[row][col] != CellContent.empty) return null;
 
     // Slide until we hit wall or occupied cell
     int finalRow = row, finalCol = col;
     while (true) {
-      int nextRow = finalRow + dr;
-      int nextCol = finalCol + dc;
+      int nextRow = finalRow + slideRowDirection;
+      int nextCol = finalCol + slideColDirection;
       if (nextRow < 0 || nextRow >= rows || nextCol < 0 || nextCol >= cols) break;
       if (board[nextRow][nextCol] != CellContent.empty) break;
       finalRow = nextRow;
@@ -93,7 +90,7 @@ class GameState extends ChangeNotifier {
     }
 
     _placeCell(finalRow, finalCol, currentPlayer == 1 ? CellContent.player1 : CellContent.player2);
-    return true;
+    return [finalRow, finalCol];
   }
 
   /// Place a block on a specific cell
@@ -192,7 +189,7 @@ class GameState extends ChangeNotifier {
     return winningCells.any((c) => c[0] == row && c[1] == col);
   }
 
-  /// Apply an opponent's move (for online/bluetooth)
+  /// Apply an opponent's move (for online)
   void applyRemoteMove(Move move) {
     if (move.isBlock) {
       board[move.row][move.col] = move.player == 1 ? CellContent.block1 : CellContent.block2;

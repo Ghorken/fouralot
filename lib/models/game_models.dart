@@ -4,7 +4,7 @@ enum GameMode { normal, fourDirections, blocks }
 
 enum CellContent { empty, player1, player2, block1, block2 }
 
-enum Direction { left, right, top, bottom }
+enum Side { left, right, top, bottom }
 
 class GameConfig {
   final ConnectionMode connectionMode;

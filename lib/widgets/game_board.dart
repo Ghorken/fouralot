@@ -5,20 +5,20 @@ import 'package:fouralot/models/game_state.dart';
 class GameBoard extends StatelessWidget {
   final List<List<CellContent>> board;
   final List<List<int>> winningCells;
-  final void Function(int col) onColumnTap;
-  final void Function(int row, int col) onCellTap;
-  final bool showColumnTap;
+  final void Function(int col)? onColumnTap;
+  final void Function(int row, int col)? onCellTap;
   final bool blockMode;
   final bool useAspectRatio;
+  final GameMode gameMode;
 
   const GameBoard({
     super.key,
     required this.board,
     required this.winningCells,
-    required this.onColumnTap,
-    required this.onCellTap,
-    required this.showColumnTap,
+    this.onColumnTap,
+    this.onCellTap,
     required this.blockMode,
+    required this.gameMode,
     this.useAspectRatio = true,
   });
 
@@ -52,10 +52,10 @@ class GameBoard extends StatelessWidget {
                         return Expanded(
                           child: GestureDetector(
                             onTap: () {
-                              if (showColumnTap && !blockMode) {
-                                onColumnTap(col);
-                              } else {
-                                onCellTap(row, col);
+                              if (gameMode == GameMode.normal) {
+                                onColumnTap?.call(col);
+                              } else if (gameMode == GameMode.blocks && blockMode) {
+                                onCellTap?.call(row, col);
                               }
                             },
                             child: _Cell(content: content, winning: winning, blockMode: blockMode && content == CellContent.empty),

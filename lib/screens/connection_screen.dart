@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fouralot/models/game_models.dart';
 import 'package:fouralot/services/network_service.dart';
-import 'game_mode_screen.dart';
+import 'package:fouralot/screens/game_mode_screen.dart';
 
 class ConnectionScreen extends StatefulWidget {
   final ConnectionMode connectionMode;
@@ -70,7 +70,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
               children: [
                 _buildHeader(),
                 const SizedBox(height: 32),
-                if (widget.connectionMode == ConnectionMode.local) _buildLocalSection() else _buildOnlineSection(),
+                _buildOnlineSection(),
                 const Spacer(),
                 if (_connected) _buildContinueButton(),
               ],
@@ -82,8 +82,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   Widget _buildHeader() {
-    String title = widget.connectionMode == ConnectionMode.local ? 'LOCALE' : 'ONLINE';
-    Color color = widget.connectionMode == ConnectionMode.local ? const Color(0xFFFF6B6B) : const Color(0xFF4ECDC4);
+    Color color = const Color(0xFF4ECDC4);
 
     return Row(
       children: [
@@ -93,33 +92,13 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         ),
         const SizedBox(width: 16),
         Text(
-          'CONNESSIONE $title',
+          'CONNESSIONE ONLINE',
           style: GoogleFonts.orbitron(
             color: color,
             fontSize: 16,
             fontWeight: FontWeight.w700,
             letterSpacing: 2,
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLocalSection() {
-    return const Column(
-      children: [
-        _InfoCard(
-          icon: Icons.people,
-          color: Color(0xFFFF6B6B),
-          title: 'Gioco locale',
-          body: 'Giocate sullo stesso dispositivo, passandovi il telefono a turno.',
-        ),
-        SizedBox(height: 16),
-        _InfoCard(
-          icon: Icons.check_circle,
-          color: Colors.greenAccent,
-          title: 'Pronto!',
-          body: 'Nessuna configurazione necessaria. Scegli la modalità di gioco.',
         ),
       ],
     );
@@ -222,7 +201,6 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   Widget _buildContinueButton() {
-    final isOnlineClient = widget.connectionMode != ConnectionMode.local && !_networkService.isHost;
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -234,7 +212,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: Text(
-          isOnlineClient ? 'VEDI MODALITÀ HOST' : 'SCEGLI MODALITÀ DI GIOCO',
+          _networkService.isHost ? 'SCEGLI MODALITÀ DI GIOCO' : 'VEDI MODALITÀ HOST',
           style: GoogleFonts.orbitron(
             fontWeight: FontWeight.w900,
             fontSize: 14,
@@ -297,7 +275,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         builder: (_) => GameModeScreen(
           connectionMode: widget.connectionMode,
           playerNumber: _playerNumber,
-          networkService: widget.connectionMode == ConnectionMode.local ? null : _networkService,
+          networkService: _networkService,
         ),
       ),
     );
