@@ -15,17 +15,14 @@ class NetworkService {
   bool isHost = false;
   int playerNumber = 1;
   final StreamController<Move> _moveController = StreamController.broadcast();
-  final StreamController<GameMode> _modeController =
-      StreamController.broadcast();
-  final StreamController<void> _modeAcceptedController =
-      StreamController.broadcast();
-  final StreamController<String> _statusController =
-      StreamController.broadcast();
+  final StreamController<GameMode> _modeController = StreamController.broadcast();
+  final StreamController<GameMode> _modeAcceptedController = StreamController.broadcast();
+  final StreamController<String> _statusController = StreamController.broadcast();
   ConnectionMode mode = ConnectionMode.lan;
 
   Stream<Move> get onMove => _moveController.stream;
   Stream<GameMode> get onModeSelected => _modeController.stream;
-  Stream<void> get onModeAccepted => _modeAcceptedController.stream;
+  Stream<GameMode> get onModeAccepted => _modeAcceptedController.stream;
   Stream<String> get onStatus => _statusController.stream;
 
   // ─── LAN State (Sockets) ─────────────────────────────────────────────────
@@ -79,8 +76,7 @@ class NetworkService {
   Future<bool> connectToLanHost(String ip) async {
     try {
       mode = ConnectionMode.lan;
-      _socket =
-          await Socket.connect(ip, 4242, timeout: const Duration(seconds: 10));
+      _socket = await Socket.connect(ip, 4242, timeout: const Duration(seconds: 10));
       isHost = false;
       playerNumber = 2;
       _statusController.add('connected');
@@ -119,14 +115,11 @@ class NetworkService {
     client.onConnected = () {
       client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> c) {
         final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
-        final String pt =
-            MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+        final String pt = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
         _handleIncomingPayload(pt);
       });
     };
-    final connMess = MqttConnectMessage()
-        .withClientIdentifier('fouralot_${Random().nextInt(100000)}')
-        .startClean();
+    final connMess = MqttConnectMessage().withClientIdentifier('fouralot_${Random().nextInt(100000)}').startClean();
     client.connectionMessage = connMess;
 
     try {
@@ -190,8 +183,7 @@ class NetworkService {
     if (_mqttClient == null || _myTopic == null) return;
     final builder = MqttClientPayloadBuilder();
     builder.addString(data);
-    _mqttClient!
-        .publishMessage(_myTopic!, MqttQos.atMostOnce, builder.payload!);
+    _mqttClient!.publishMessage(_myTopic!, MqttQos.atMostOnce, builder.payload!);
   }
 
   // ─── Unified Send ────────────────────────────────────────────────────────
@@ -217,8 +209,11 @@ class NetworkService {
     }
   }
 
-  void sendModeAccepted() {
-    final payload = jsonEncode({'type': 'mode_accepted'});
+  void sendModeAccepted(GameMode gameMode) {
+    final payload = jsonEncode({
+      'type': 'mode_accepted',
+      'mode': _gameModeToWire(gameMode),
+    });
     if (mode == ConnectionMode.lan) {
       _socket?.write('$payload\n');
     } else if (mode == ConnectionMode.internet) {
@@ -238,19 +233,17 @@ class NetworkService {
     try {
       final json = jsonDecode(payload) as Map<String, dynamic>;
       final type = json['type'];
+      final modeName = json['mode'] as String?;
+      final mode = _gameModeFromWire(modeName);
       if (type == 'mode_selected') {
-        final modeName = json['mode'] as String?;
-        final mode = _gameModeFromWire(modeName);
         if (mode != null) _modeController.add(mode);
         return;
       }
       if (type == 'mode_accepted') {
-        _modeAcceptedController.add(null);
+        if (mode != null) _modeAcceptedController.add(mode);
         return;
       }
-      if (json.containsKey('row') &&
-          json.containsKey('col') &&
-          json.containsKey('player')) {
+      if (json.containsKey('row') && json.containsKey('col') && json.containsKey('player')) {
         _moveController.add(Move.fromJson(json));
       }
     } catch (_) {}

@@ -25,8 +25,9 @@ class GameModeScreen extends StatefulWidget {
 
 class _GameModeScreenState extends State<GameModeScreen> {
   StreamSubscription<GameMode>? _modeSub;
-  StreamSubscription<void>? _modeAcceptedSub;
+  StreamSubscription<GameMode>? _modeAcceptedSub;
   GameMode? _selectedMode;
+  bool _waiting = false;
 
   bool get _isOnlineClient {
     if (widget.networkService == null) return false;
@@ -51,7 +52,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
     }
 
     if (_isOnlineHost) {
-      _modeAcceptedSub = widget.networkService!.onModeAccepted.listen((_) {
+      _modeAcceptedSub = widget.networkService!.onModeAccepted.listen((mode) {
         if (!mounted) return;
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
@@ -61,6 +62,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
               duration: Duration(milliseconds: 1200),
             ),
           );
+        _openGame(mode);
       });
     }
   }
@@ -118,6 +120,26 @@ class _GameModeScreenState extends State<GameModeScreen> {
   }
 
   Widget _buildSelectableModes(BuildContext context) {
+    if (_waiting) {
+      return Column(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('ATTENDI', style: GoogleFonts.orbitron(color: const Color(0xFFFF6B6B), fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 2)),
+              const SizedBox(height: 10),
+              Text('Resta in attesa che l\'avversaio accetti la modalità di gioco.', style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFFFFD700),
+            ),
+          )
+        ],
+      );
+    }
     return Column(
       children: [
         _ModeCard(
@@ -126,7 +148,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
           icon: '⬇️',
           color: const Color(0xFFFF6B6B),
           description: 'Le regole classiche del Forza 4. Inserisci le pedine dall\'alto e forma una fila di 4.',
-          onTap: () => _startGame(context, GameMode.normal),
+          onTap: () => _chooseMode(context, GameMode.normal),
         ),
         const SizedBox(height: 16),
         _ModeCard(
@@ -135,7 +157,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
           icon: '↔️',
           color: const Color(0xFF4ECDC4),
           description: 'Inserisci le pedine da qualsiasi lato della griglia toccando le frecce ↑↓←→. La pedina scivola fino al lato opposto o a un\'altra pedina.',
-          onTap: () => _startGame(context, GameMode.fourDirections),
+          onTap: () => _chooseMode(context, GameMode.fourDirections),
         ),
         const SizedBox(height: 16),
         _ModeCard(
@@ -144,7 +166,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
           icon: '🧱',
           color: const Color(0xFFFFD700),
           description: 'Come 4 Direzioni (usa le frecce ↑↓←→), ma ogni giocatore ha 3 blocchi da posizionare al posto di una mossa. Le pedine si fermano anche sui blocchi.',
-          onTap: () => _startGame(context, GameMode.blocks),
+          onTap: () => _chooseMode(context, GameMode.blocks),
         ),
       ],
     );
@@ -209,15 +231,17 @@ class _GameModeScreenState extends State<GameModeScreen> {
   void _acceptMode() {
     final mode = _selectedMode;
     if (mode == null) return;
-    widget.networkService?.sendModeAccepted();
+    widget.networkService?.sendModeAccepted(mode);
     _openGame(mode);
   }
 
-  void _startGame(BuildContext context, GameMode mode) {
+  void _chooseMode(BuildContext context, GameMode mode) {
     if (_isOnlineHost) {
       widget.networkService?.sendSelectedMode(mode);
     }
-    _openGame(mode);
+    setState(() {
+      _waiting = true;
+    });
   }
 
   void _openGame(GameMode mode) {

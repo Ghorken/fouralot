@@ -173,13 +173,13 @@ class _GameScreenState extends State<GameScreen> {
 
     if (isNormal) {
       return LayoutBuilder(builder: (context, constraints) {
-        const double arrowH = 40.0;
+        const double sideH = _kSideButtonHeight;
         const double sideW = _kSideButtonWidth;
         final double availW = constraints.maxWidth;
         final double availH = constraints.maxHeight;
 
         final double innerW = availW - 2 * sideW;
-        final double innerH = availH - 2 * arrowH;
+        final double innerH = availH - 2 * sideH;
 
         double boardW, boardH;
         if (innerH > 0 && innerW / innerH >= cols / rows) {
@@ -599,4 +599,5 @@ class _PlayerChip extends StatelessWidget {
 
 // Arrow size constants used by _buildBoardArea
 const double _kSideButtonWidth = 40.0;
+const double _kSideButtonHeight = 40.0;
 const double _kArrowIconSize = 26.0;
