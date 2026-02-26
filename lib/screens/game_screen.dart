@@ -362,7 +362,30 @@ class _GameScreenState extends State<GameScreen> {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () => {
+              // TODO: Implementare grafica personalizzata per l'alert dialog
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Esci'),
+                  content: const Text('Sei sicuro di voler uscire? Perderai la partita'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('No'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        gs.abandonGame();
+                        Navigator.pop(dialogContext);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Sì'),
+                    ),
+                  ],
+                ),
+              ),
+            },
             child: const Icon(Icons.arrow_back_ios, color: Colors.white70, size: 26),
           ),
           const SizedBox(width: 12),

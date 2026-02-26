@@ -238,10 +238,12 @@ class _GameModeScreenState extends State<GameModeScreen> {
   void _chooseMode(BuildContext context, GameMode mode) {
     if (_isOnlineHost) {
       widget.networkService?.sendSelectedMode(mode);
+      setState(() {
+        _waiting = true;
+      });
+    } else {
+      _openGame(mode);
     }
-    setState(() {
-      _waiting = true;
-    });
   }
 
   void _openGame(GameMode mode) {

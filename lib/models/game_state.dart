@@ -25,6 +25,12 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void abandonGame() {
+    winner = currentPlayer == 1 ? 2 : 1;
+    gameOver = true;
+    notifyListeners();
+  }
+
   void resetBoard() {
     board = List.generate(rows, (_) => List.filled(cols, CellContent.empty));
     currentPlayer = 1;
