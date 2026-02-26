@@ -29,17 +29,131 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   StreamSubscription? _moveSub;
   bool _blockMode = false; // true when player wants to place a block
+  bool _aiLevelAwarded = false;
   late GameState _gameState;
 
   bool get _isMyTurn {
     final gs = context.read<GameState>();
     if (widget.config.connectionMode == ConnectionMode.local) return true;
-    if (widget.config.connectionMode == ConnectionMode.ai) return gs.currentPlayer == 1;
+    if (widget.config.connectionMode == ConnectionMode.ai) {
+      return gs.currentPlayer == 1;
+    }
     return gs.currentPlayer == widget.playerNumber;
   }
 
-  bool get _isMultiplayer => widget.config.connectionMode == ConnectionMode.lan || widget.config.connectionMode == ConnectionMode.internet;
+  bool get _isMultiplayer =>
+      widget.config.connectionMode == ConnectionMode.lan ||
+      widget.config.connectionMode == ConnectionMode.internet;
   bool get _isAiMode => widget.config.connectionMode == ConnectionMode.ai;
+
+  Future<void> _showExitDialog(GameState gs) async {
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1A1A3E), Color(0xFF0F0C29)],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFFFFD700).withValues(alpha: 0.45),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFD700).withValues(alpha: 0.12),
+                blurRadius: 24,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'USCIRE DALLA PARTITA?',
+                style: GoogleFonts.orbitron(
+                  color: const Color(0xFFFFD700),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Se esci adesso la partita verrà persa.',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                        foregroundColor: Colors.white70,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'ANNULLA',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        gs.abandonGame();
+                        Navigator.pop(dialogContext);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF6B6B),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'ESCI',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.8,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -98,7 +212,8 @@ class _GameScreenState extends State<GameScreen> {
 
     if (_blockMode) {
       if (gs.placeBlock(row, col)) {
-        _sendMove(Move(row: row, col: col, player: widget.playerNumber, isBlock: true));
+        _sendMove(Move(
+            row: row, col: col, player: widget.playerNumber, isBlock: true));
         setState(() => _blockMode = false);
         if (_isAiMode) _scheduleAiMove();
       } else {
@@ -115,12 +230,14 @@ class _GameScreenState extends State<GameScreen> {
         SnackBar(
           content: Text(
             msg,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w600),
           ),
           backgroundColor: const Color(0xFFFF6B6B).withValues(alpha: 0.9),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           duration: const Duration(milliseconds: 1500),
         ),
       );
@@ -153,7 +270,7 @@ class _GameScreenState extends State<GameScreen> {
     final gs = context.read<GameState>();
     if (gs.gameOver || gs.currentPlayer != 2) return;
 
-    final move = AiService().getBestMove(gs, 2);
+    final move = AiService(level: widget.config.aiLevel).getBestMove(gs, 2);
     if (move == null) return;
 
     if (move.isBlock) {
@@ -274,7 +391,8 @@ class _GameScreenState extends State<GameScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(width: sideW + hOff),
-                ...List.generate(cols, (i) => colArrow(Icons.arrow_downward, i, Side.top)),
+                ...List.generate(
+                    cols, (i) => colArrow(Icons.arrow_downward, i, Side.top)),
                 SizedBox(width: sideW + hOff),
               ],
             ),
@@ -284,7 +402,9 @@ class _GameScreenState extends State<GameScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Column(children: List.generate(rows, (i) => rowArrow(Icons.arrow_forward, i, Side.left))),
+                Column(
+                    children: List.generate(rows,
+                        (i) => rowArrow(Icons.arrow_forward, i, Side.left))),
                 SizedBox(width: hOff),
                 SizedBox(
                   width: boardW,
@@ -299,7 +419,9 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
                 SizedBox(width: hOff),
-                Column(children: List.generate(rows, (i) => rowArrow(Icons.arrow_back, i, Side.right))),
+                Column(
+                    children: List.generate(rows,
+                        (i) => rowArrow(Icons.arrow_back, i, Side.right))),
               ],
             ),
           ),
@@ -309,7 +431,8 @@ class _GameScreenState extends State<GameScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(width: sideW + hOff),
-                ...List.generate(cols, (i) => colArrow(Icons.arrow_upward, i, Side.bottom)),
+                ...List.generate(
+                    cols, (i) => colArrow(Icons.arrow_upward, i, Side.bottom)),
                 SizedBox(width: sideW + hOff),
               ],
             ),
@@ -319,10 +442,39 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
+  void _handleAiLevelProgress(GameState gs) {
+    if (!_isAiMode) return;
+    if (!gs.gameOver) {
+      _aiLevelAwarded = false;
+      return;
+    }
+    if (_aiLevelAwarded) return;
+    _aiLevelAwarded = true;
+
+    if (gs.winner == 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final currentLevel = widget.config.aiLevel;
+        context.read<GameState>().increaseAiLevel(widget.config.gameMode);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                'IA livello $currentLevel sconfitta. Prossimo livello: ${currentLevel + 1}',
+              ),
+              duration: const Duration(milliseconds: 1800),
+            ),
+          );
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<GameState>(
       builder: (context, gs, _) {
+        _handleAiLevelProgress(gs);
         return Scaffold(
           body: Container(
             decoration: const BoxDecoration(
@@ -357,40 +509,19 @@ class _GameScreenState extends State<GameScreen> {
         : widget.config.gameMode == GameMode.fourDirections
             ? '4 DIREZIONI'
             : 'BLOCCHI';
+    final levelLabel = _isAiMode ? ' · LV ${widget.config.aiLevel}' : '';
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => {
-              // TODO: Implementare grafica personalizzata per l'alert dialog
-              showDialog(
-                context: context,
-                builder: (dialogContext) => AlertDialog(
-                  title: const Text('Esci'),
-                  content: const Text('Sei sicuro di voler uscire? Perderai la partita'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text('No'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        gs.abandonGame();
-                        Navigator.pop(dialogContext);
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Sì'),
-                    ),
-                  ],
-                ),
-              ),
-            },
-            child: const Icon(Icons.arrow_back_ios, color: Colors.white70, size: 26),
+            onTap: () => _showExitDialog(gs),
+            child: const Icon(Icons.arrow_back_ios,
+                color: Colors.white70, size: 26),
           ),
           const SizedBox(width: 12),
           Text(
-            '4alot · $modeName',
+            '4alot · $modeName$levelLabel',
             style: GoogleFonts.orbitron(
               color: Colors.white70,
               fontSize: 16,
@@ -419,7 +550,9 @@ class _GameScreenState extends State<GameScreen> {
       child: Row(
         children: [
           _PlayerChip(
-            label: _isMultiplayer ? (widget.playerNumber == 1 ? 'TU' : 'Giocatore 1') : 'Giocatore 1',
+            label: _isMultiplayer
+                ? (widget.playerNumber == 1 ? 'TU' : 'Giocatore 1')
+                : 'Giocatore 1',
             color: p1Color,
             active: gs.currentPlayer == 1 && !gs.gameOver,
           ),
@@ -429,11 +562,15 @@ class _GameScreenState extends State<GameScreen> {
               duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: myTurn ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
+                color: myTurn
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                myTurn ? 'IL TUO TURNO' : (_isAiMode ? 'IA PENSA...' : 'AVVERSARIO'),
+                myTurn
+                    ? 'IL TUO TURNO'
+                    : (_isAiMode ? 'IA PENSA...' : 'AVVERSARIO'),
                 style: GoogleFonts.orbitron(
                   color: myTurn ? Colors.white : Colors.white38,
                   fontSize: 9,
@@ -443,7 +580,11 @@ class _GameScreenState extends State<GameScreen> {
             ),
           const Spacer(),
           _PlayerChip(
-            label: _isMultiplayer ? (widget.playerNumber == 2 ? 'TU' : 'Giocatore 2') : (_isAiMode ? 'IA' : 'Giocatore 2'),
+            label: _isMultiplayer
+                ? (widget.playerNumber == 2 ? 'TU' : 'Giocatore 2')
+                : (_isAiMode
+                    ? 'IA LV ${widget.config.aiLevel}'
+                    : 'Giocatore 2'),
             color: p2Color,
             active: gs.currentPlayer == 2 && !gs.gameOver,
           ),
@@ -453,7 +594,9 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildBottomBar(GameState gs) {
-    if (widget.config.gameMode != GameMode.blocks) return const SizedBox(height: 8);
+    if (widget.config.gameMode != GameMode.blocks) {
+      return const SizedBox(height: 8);
+    }
     if (gs.gameOver) return const SizedBox(height: 8);
 
     int blocksLeft = gs.currentPlayerBlocks;
@@ -464,14 +607,17 @@ class _GameScreenState extends State<GameScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('Blocchi: ', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          const Text('Blocchi: ',
+              style: TextStyle(color: Colors.white54, fontSize: 12)),
           ...List.generate(
               3,
               (i) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
                     child: Icon(
                       Icons.square,
-                      color: i < blocksLeft ? const Color(0xFFFFD700) : Colors.white12,
+                      color: i < blocksLeft
+                          ? const Color(0xFFFFD700)
+                          : Colors.white12,
                       size: 18,
                     ),
                   )),
@@ -481,9 +627,12 @@ class _GameScreenState extends State<GameScreen> {
               onTap: () => setState(() => _blockMode = !_blockMode),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _blockMode ? const Color(0xFFFFD700) : Colors.white.withValues(alpha: 0.1),
+                  color: _blockMode
+                      ? const Color(0xFFFFD700)
+                      : Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: const Color(0xFFFFD700).withValues(alpha: 0.5),
@@ -492,12 +641,16 @@ class _GameScreenState extends State<GameScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.square, color: _blockMode ? Colors.black : const Color(0xFFFFD700), size: 14),
+                    Icon(Icons.square,
+                        color:
+                            _blockMode ? Colors.black : const Color(0xFFFFD700),
+                        size: 14),
                     const SizedBox(width: 6),
                     Text(
                       _blockMode ? 'ANNULLA' : 'PIAZZA BLOCCO',
                       style: GoogleFonts.orbitron(
-                        color: _blockMode ? Colors.black : const Color(0xFFFFD700),
+                        color:
+                            _blockMode ? Colors.black : const Color(0xFFFFD700),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1,
@@ -518,12 +671,22 @@ class _GameScreenState extends State<GameScreen> {
     if (gs.winner == 0) {
       msg = 'PAREGGIO!';
       color = Colors.white;
+    } else if (_isAiMode) {
+      msg = gs.winner == 1
+          ? '🏆 HAI VINTO! · LV ${widget.config.aiLevel}'
+          : '🤖 IA VINCE · LV ${widget.config.aiLevel}';
+      color =
+          gs.winner == 1 ? const Color(0xFFFFD700) : const Color(0xFFFF6B6B);
     } else if (_isMultiplayer) {
-      msg = gs.winner == widget.playerNumber ? '🏆 HAI VINTO!' : '😔 HAI PERSO!';
-      color = gs.winner == widget.playerNumber ? const Color(0xFFFFD700) : const Color(0xFFFF6B6B);
+      msg =
+          gs.winner == widget.playerNumber ? '🏆 HAI VINTO!' : '😔 HAI PERSO!';
+      color = gs.winner == widget.playerNumber
+          ? const Color(0xFFFFD700)
+          : const Color(0xFFFF6B6B);
     } else {
       msg = 'GIOCATORE ${gs.winner} VINCE!';
-      color = gs.winner == 1 ? const Color(0xFFFF6B6B) : const Color(0xFFFFD700);
+      color =
+          gs.winner == 1 ? const Color(0xFFFF6B6B) : const Color(0xFFFFD700);
     }
 
     return Container(
@@ -552,7 +715,8 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('MENU', style: TextStyle(color: Colors.white54, letterSpacing: 2)),
+                child: const Text('MENU',
+                    style: TextStyle(color: Colors.white54, letterSpacing: 2)),
               ),
               const SizedBox(width: 16),
               ElevatedButton(
@@ -560,18 +724,25 @@ class _GameScreenState extends State<GameScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
                 child: Text(
                   'RIVINCITA',
-                  style: GoogleFonts.orbitron(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 2),
+                  style: GoogleFonts.orbitron(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2),
                 ),
               ),
             ],
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
+    )
+        .animate()
+        .fadeIn(duration: 500.ms)
+        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
   }
 }
 
@@ -580,7 +751,8 @@ class _PlayerChip extends StatelessWidget {
   final Color color;
   final bool active;
 
-  const _PlayerChip({required this.label, required this.color, required this.active});
+  const _PlayerChip(
+      {required this.label, required this.color, required this.active});
 
   @override
   Widget build(BuildContext context) {
@@ -601,7 +773,12 @@ class _PlayerChip extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              boxShadow: active ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6)] : null,
+              boxShadow: active
+                  ? [
+                      BoxShadow(
+                          color: color.withValues(alpha: 0.5), blurRadius: 6)
+                    ]
+                  : null,
             ),
           ),
           const SizedBox(width: 6),

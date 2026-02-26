@@ -9,10 +9,12 @@ enum Side { left, right, top, bottom }
 class GameConfig {
   final ConnectionMode connectionMode;
   final GameMode gameMode;
+  final int aiLevel;
 
   const GameConfig({
     required this.connectionMode,
     required this.gameMode,
+    this.aiLevel = 1,
   });
 }
 

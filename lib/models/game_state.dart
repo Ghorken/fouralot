@@ -17,8 +17,20 @@ class GameState extends ChangeNotifier {
   int blocksRemaining1 = 3;
   int blocksRemaining2 = 3;
   List<List<int>> winningCells = [];
+  final Map<GameMode, int> _aiLevels = {
+    GameMode.normal: 1,
+    GameMode.fourDirections: 1,
+    GameMode.blocks: 1,
+  };
 
-  int get currentPlayerBlocks => currentPlayer == 1 ? blocksRemaining1 : blocksRemaining2;
+  int get currentPlayerBlocks =>
+      currentPlayer == 1 ? blocksRemaining1 : blocksRemaining2;
+  int aiLevelForMode(GameMode mode) => _aiLevels[mode] ?? 1;
+
+  void increaseAiLevel(GameMode mode) {
+    _aiLevels[mode] = aiLevelForMode(mode) + 1;
+    notifyListeners();
+  }
 
   void startGame(GameConfig cfg) {
     config = cfg;
@@ -47,7 +59,8 @@ class GameState extends ChangeNotifier {
     if (gameOver) return false;
     int row = _findLowestEmpty(col);
     if (row == -1) return false;
-    _placeCell(row, col, currentPlayer == 1 ? CellContent.player1 : CellContent.player2);
+    _placeCell(row, col,
+        currentPlayer == 1 ? CellContent.player1 : CellContent.player2);
     return true;
   }
 
@@ -89,13 +102,16 @@ class GameState extends ChangeNotifier {
     while (true) {
       int nextRow = finalRow + slideRowDirection;
       int nextCol = finalCol + slideColDirection;
-      if (nextRow < 0 || nextRow >= rows || nextCol < 0 || nextCol >= cols) break;
+      if (nextRow < 0 || nextRow >= rows || nextCol < 0 || nextCol >= cols) {
+        break;
+      }
       if (board[nextRow][nextCol] != CellContent.empty) break;
       finalRow = nextRow;
       finalCol = nextCol;
     }
 
-    _placeCell(finalRow, finalCol, currentPlayer == 1 ? CellContent.player1 : CellContent.player2);
+    _placeCell(finalRow, finalCol,
+        currentPlayer == 1 ? CellContent.player1 : CellContent.player2);
     return [finalRow, finalCol];
   }
 
@@ -114,7 +130,8 @@ class GameState extends ChangeNotifier {
       blocksRemaining2--;
     }
 
-    board[row][col] = currentPlayer == 1 ? CellContent.block1 : CellContent.block2;
+    board[row][col] =
+        currentPlayer == 1 ? CellContent.block1 : CellContent.block2;
     _checkAfterMove();
     return true;
   }
@@ -143,7 +160,8 @@ class GameState extends ChangeNotifier {
     }
 
     // Check draw
-    bool full = board.every((row) => row.every((cell) => cell != CellContent.empty));
+    bool full =
+        board.every((row) => row.every((cell) => cell != CellContent.empty));
     if (full) {
       winner = 0;
       gameOver = true;
@@ -198,7 +216,8 @@ class GameState extends ChangeNotifier {
   /// Apply an opponent's move (for online)
   void applyRemoteMove(Move move) {
     if (move.isBlock) {
-      board[move.row][move.col] = move.player == 1 ? CellContent.block1 : CellContent.block2;
+      board[move.row][move.col] =
+          move.player == 1 ? CellContent.block1 : CellContent.block2;
       if (move.player == 1) {
         blocksRemaining1--;
       } else {
@@ -206,7 +225,8 @@ class GameState extends ChangeNotifier {
       }
       _checkAfterMove();
     } else {
-      _placeCell(move.row, move.col, move.player == 1 ? CellContent.player1 : CellContent.player2);
+      _placeCell(move.row, move.col,
+          move.player == 1 ? CellContent.player1 : CellContent.player2);
     }
   }
 }
