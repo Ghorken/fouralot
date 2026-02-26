@@ -27,7 +27,8 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  StreamSubscription? _moveSub;
+  StreamSubscription<Move>? _moveSub;
+  StreamSubscription<void>? _surrenderSub;
   bool _blockMode = false; // true when player wants to place a block
   bool _aiLevelAwarded = false;
   late GameState _gameState;
@@ -124,6 +125,9 @@ class _GameScreenState extends State<GameScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
+                        if (_isMultiplayer) {
+                          widget.networkService?.sendSurrender();
+                        }
                         gs.abandonGame();
                         Navigator.pop(dialogContext);
                         Navigator.pop(context);
@@ -166,6 +170,9 @@ class _GameScreenState extends State<GameScreen> {
     // Listen for remote moves
     if (widget.networkService != null) {
       _moveSub = widget.networkService!.onMove.listen(_applyRemote);
+      _surrenderSub = widget.networkService!.onSurrender.listen((_) {
+        _applyRemoteSurrender();
+      });
     }
   }
 
@@ -174,9 +181,26 @@ class _GameScreenState extends State<GameScreen> {
     context.read<GameState>().applyRemoteMove(move);
   }
 
+  void _applyRemoteSurrender() {
+    if (!mounted) return;
+    final gs = context.read<GameState>();
+    if (!gs.gameOver) {
+      gs.opponentRetired(widget.playerNumber);
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('L\'avversario si è ritirato. Vittoria assegnata.'),
+          duration: Duration(milliseconds: 1800),
+        ),
+      );
+  }
+
   @override
   void dispose() {
     _moveSub?.cancel();
+    _surrenderSub?.cancel();
     // Defer reset to next frame: notifyListeners() cannot fire while the tree is locked
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _gameState.resetBoard();
@@ -470,6 +494,27 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  void _startNextAiMatch() {
+    final gs = context.read<GameState>();
+    final nextLevel = gs.aiLevelForMode(widget.config.gameMode);
+    gs.resetBoard();
+    final nextConfig = GameConfig(
+      connectionMode: widget.config.connectionMode,
+      gameMode: widget.config.gameMode,
+      aiLevel: nextLevel,
+    );
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GameScreen(
+          config: nextConfig,
+          playerNumber: widget.playerNumber,
+          networkService: widget.networkService,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<GameState>(
@@ -720,7 +765,8 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(width: 16),
               ElevatedButton(
-                onPressed: () => gs.resetBoard(),
+                onPressed:
+                    _isAiMode ? _startNextAiMatch : () => gs.resetBoard(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.black,
@@ -728,7 +774,7 @@ class _GameScreenState extends State<GameScreen> {
                       borderRadius: BorderRadius.circular(10)),
                 ),
                 child: Text(
-                  'RIVINCITA',
+                  _isAiMode ? 'NUOVA PARTITA' : 'RIVINCITA',
                   style: GoogleFonts.orbitron(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,

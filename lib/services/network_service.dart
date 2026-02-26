@@ -15,14 +15,20 @@ class NetworkService {
   bool isHost = false;
   int playerNumber = 1;
   final StreamController<Move> _moveController = StreamController.broadcast();
-  final StreamController<GameMode> _modeController = StreamController.broadcast();
-  final StreamController<GameMode> _modeAcceptedController = StreamController.broadcast();
-  final StreamController<String> _statusController = StreamController.broadcast();
+  final StreamController<GameMode> _modeController =
+      StreamController.broadcast();
+  final StreamController<GameMode> _modeAcceptedController =
+      StreamController.broadcast();
+  final StreamController<void> _surrenderController =
+      StreamController.broadcast();
+  final StreamController<String> _statusController =
+      StreamController.broadcast();
   ConnectionMode mode = ConnectionMode.lan;
 
   Stream<Move> get onMove => _moveController.stream;
   Stream<GameMode> get onModeSelected => _modeController.stream;
   Stream<GameMode> get onModeAccepted => _modeAcceptedController.stream;
+  Stream<void> get onSurrender => _surrenderController.stream;
   Stream<String> get onStatus => _statusController.stream;
 
   // ─── LAN State (Sockets) ─────────────────────────────────────────────────
@@ -76,7 +82,8 @@ class NetworkService {
   Future<bool> connectToLanHost(String ip) async {
     try {
       mode = ConnectionMode.lan;
-      _socket = await Socket.connect(ip, 4242, timeout: const Duration(seconds: 10));
+      _socket =
+          await Socket.connect(ip, 4242, timeout: const Duration(seconds: 10));
       isHost = false;
       playerNumber = 2;
       _statusController.add('connected');
@@ -115,11 +122,14 @@ class NetworkService {
     client.onConnected = () {
       client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> c) {
         final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
-        final String pt = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+        final String pt =
+            MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
         _handleIncomingPayload(pt);
       });
     };
-    final connMess = MqttConnectMessage().withClientIdentifier('fouralot_${Random().nextInt(100000)}').startClean();
+    final connMess = MqttConnectMessage()
+        .withClientIdentifier('fouralot_${Random().nextInt(100000)}')
+        .startClean();
     client.connectionMessage = connMess;
 
     try {
@@ -183,7 +193,8 @@ class NetworkService {
     if (_mqttClient == null || _myTopic == null) return;
     final builder = MqttClientPayloadBuilder();
     builder.addString(data);
-    _mqttClient!.publishMessage(_myTopic!, MqttQos.atMostOnce, builder.payload!);
+    _mqttClient!
+        .publishMessage(_myTopic!, MqttQos.atMostOnce, builder.payload!);
   }
 
   // ─── Unified Send ────────────────────────────────────────────────────────
@@ -221,6 +232,15 @@ class NetworkService {
     }
   }
 
+  void sendSurrender() {
+    final payload = jsonEncode({'type': 'surrender'});
+    if (mode == ConnectionMode.lan) {
+      _socket?.write('$payload\n');
+    } else if (mode == ConnectionMode.internet) {
+      _sendMqttRaw(payload);
+    }
+  }
+
   void _handleIncomingPayload(String raw) {
     final payload = raw.trim();
     if (payload.isEmpty) return;
@@ -243,7 +263,13 @@ class NetworkService {
         if (mode != null) _modeAcceptedController.add(mode);
         return;
       }
-      if (json.containsKey('row') && json.containsKey('col') && json.containsKey('player')) {
+      if (type == 'surrender') {
+        _surrenderController.add(null);
+        return;
+      }
+      if (json.containsKey('row') &&
+          json.containsKey('col') &&
+          json.containsKey('player')) {
         _moveController.add(Move.fromJson(json));
       }
     } catch (_) {}
@@ -283,6 +309,7 @@ class NetworkService {
     _moveController.close();
     _modeController.close();
     _modeAcceptedController.close();
+    _surrenderController.close();
     _statusController.close();
   }
 }

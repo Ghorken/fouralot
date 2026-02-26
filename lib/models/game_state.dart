@@ -43,6 +43,14 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void opponentRetired(int localPlayer) {
+    if (gameOver) return;
+    winner = localPlayer;
+    gameOver = true;
+    winningCells = [];
+    notifyListeners();
+  }
+
   void resetBoard() {
     board = List.generate(rows, (_) => List.filled(cols, CellContent.empty));
     currentPlayer = 1;
