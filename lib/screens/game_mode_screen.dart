@@ -8,6 +8,7 @@ import 'package:fouralot/models/game_state.dart';
 import 'package:fouralot/services/network_service.dart';
 import 'package:fouralot/screens/game_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:fouralot/l10n/app_localizations.dart';
 
 class GameModeScreen extends StatefulWidget {
   final ConnectionMode connectionMode;
@@ -60,12 +61,10 @@ class _GameModeScreenState extends State<GameModeScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text('Modalità accettata dal giocatore 2'),
-              duration: Duration(milliseconds: 1200),
-            ),
-          );
+          ..showSnackBar(SnackBar(
+            content: Text(context.l10n.modeAcceptedByPlayer2),
+            duration: const Duration(milliseconds: 1200),
+          ));
         _openGame(mode);
       });
     }
@@ -80,6 +79,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -104,7 +104,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
                     ),
                     const SizedBox(width: 16),
                     Text(
-                      _isOnlineClient ? 'MODALITÀ HOST' : 'MODALITÀ DI GIOCO',
+                      _isOnlineClient ? l10n.hostModeTitle : l10n.gameModeTitle,
                       style: GoogleFonts.orbitron(
                         color: const Color(0xFFFFD700),
                         fontSize: 16,
@@ -128,6 +128,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
   }
 
   Widget _buildSelectableModes(BuildContext context) {
+    final l10n = context.l10n;
     final gs = context.watch<GameState>();
     final isAi = widget.connectionMode == ConnectionMode.ai;
     final normalLevel = gs.aiLevelForMode(GameMode.normal);
@@ -140,15 +141,14 @@ class _GameModeScreenState extends State<GameModeScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('ATTENDI',
+              Text(l10n.waitTitle,
                   style: GoogleFonts.orbitron(
                       color: const Color(0xFFFF6B6B),
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 2)),
               const SizedBox(height: 10),
-              Text(
-                  'Resta in attesa che l\'avversaio accetti la modalità di gioco.',
+              Text(l10n.waitForAcceptance,
                   style: const TextStyle(
                       color: Colors.white70, fontSize: 13, height: 1.4)),
             ],
@@ -166,11 +166,13 @@ class _GameModeScreenState extends State<GameModeScreen> {
       children: [
         _ModeCard(
           delay: 100,
-          title: isAi ? 'NORMALE · LV $normalLevel' : 'NORMALE',
+          title: isAi
+              ? '${l10n.modeName(GameMode.normal)} · LV $normalLevel'
+              : l10n.modeName(GameMode.normal),
           icon: '⬇️',
           color: const Color(0xFFFF6B6B),
           description: _modeDescription(
-            'Le regole classiche del Forza 4. Inserisci le pedine dall\'alto e forma una fila di 4.',
+            l10n.modeDescription(GameMode.normal),
             level: normalLevel,
           ),
           onTap: () => _chooseMode(context, GameMode.normal),
@@ -178,11 +180,13 @@ class _GameModeScreenState extends State<GameModeScreen> {
         const SizedBox(height: 16),
         _ModeCard(
           delay: 200,
-          title: isAi ? '4 DIREZIONI · LV $fourDirectionsLevel' : '4 DIREZIONI',
+          title: isAi
+              ? '${l10n.modeName(GameMode.fourDirections)} · LV $fourDirectionsLevel'
+              : l10n.modeName(GameMode.fourDirections),
           icon: '↔️',
           color: const Color(0xFF4ECDC4),
           description: _modeDescription(
-            'Inserisci le pedine da qualsiasi lato della griglia toccando le frecce ↑↓←→. La pedina scivola fino al lato opposto o a un\'altra pedina.',
+            l10n.modeDescription(GameMode.fourDirections),
             level: fourDirectionsLevel,
           ),
           onTap: () => _chooseMode(context, GameMode.fourDirections),
@@ -190,11 +194,13 @@ class _GameModeScreenState extends State<GameModeScreen> {
         const SizedBox(height: 16),
         _ModeCard(
           delay: 300,
-          title: isAi ? 'BLOCCHI · LV $blocksLevel' : 'BLOCCHI',
+          title: isAi
+              ? '${l10n.modeName(GameMode.blocks)} · LV $blocksLevel'
+              : l10n.modeName(GameMode.blocks),
           icon: '🧱',
           color: const Color(0xFFFFD700),
           description: _modeDescription(
-            'Come 4 Direzioni (usa le frecce ↑↓←→), ma ogni giocatore ha 3 blocchi da posizionare al posto di una mossa. Le pedine si fermano anche sui blocchi.',
+            l10n.modeDescription(GameMode.blocks),
             level: blocksLevel,
           ),
           onTap: () => _chooseMode(context, GameMode.blocks),
@@ -204,6 +210,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
   }
 
   Widget _buildClientView() {
+    final l10n = context.l10n;
     final selectedMode = _selectedMode;
     final selectedData = selectedMode == null ? null : _modeInfo(selectedMode);
 
@@ -222,10 +229,10 @@ class _GameModeScreenState extends State<GameModeScreen> {
                         .withValues(alpha: 0.4)),
           ),
           child: selectedData == null
-              ? const Column(
+              ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('In attesa che l\'host scelga la modalità...',
+                    Text(l10n.waitingHostMode,
                         style: TextStyle(color: Colors.white70, fontSize: 14)),
                     SizedBox(height: 12),
                     LinearProgressIndicator(
@@ -265,7 +272,7 @@ class _GameModeScreenState extends State<GameModeScreen> {
                   borderRadius: BorderRadius.circular(16)),
             ),
             child: Text(
-              'ACCETTA MODALITÀ',
+              l10n.acceptMode,
               style: GoogleFonts.orbitron(
                   fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 2),
             ),
@@ -316,31 +323,29 @@ class _GameModeScreenState extends State<GameModeScreen> {
 
   String _modeDescription(String base, {required int level}) {
     if (widget.connectionMode != ConnectionMode.ai) return base;
-    return 'Livello IA da affrontare: $level\n$base';
+    return '${context.l10n.aiLevelToFace(level)}\n$base';
   }
 
   _ModeData _modeInfo(GameMode mode) {
+    final l10n = context.l10n;
     switch (mode) {
       case GameMode.normal:
-        return const _ModeData(
-          title: 'NORMALE',
+        return _ModeData(
+          title: l10n.modeName(GameMode.normal),
           color: Color(0xFFFF6B6B),
-          description:
-              'Le regole classiche del Forza 4. Inserisci le pedine dall\'alto e forma una fila di 4.',
+          description: l10n.modeDescription(GameMode.normal),
         );
       case GameMode.fourDirections:
-        return const _ModeData(
-          title: '4 DIREZIONI',
+        return _ModeData(
+          title: l10n.modeName(GameMode.fourDirections),
           color: Color(0xFF4ECDC4),
-          description:
-              'Inserisci le pedine da qualsiasi lato della griglia toccando le frecce ↑↓←→. La pedina scivola fino al lato opposto o a un\'altra pedina.',
+          description: l10n.modeDescription(GameMode.fourDirections),
         );
       case GameMode.blocks:
-        return const _ModeData(
-          title: 'BLOCCHI',
+        return _ModeData(
+          title: l10n.modeName(GameMode.blocks),
           color: Color(0xFFFFD700),
-          description:
-              'Come 4 Direzioni (usa le frecce ↑↓←→), ma ogni giocatore ha 3 blocchi da posizionare al posto di una mossa. Le pedine si fermano anche sui blocchi.',
+          description: l10n.modeDescription(GameMode.blocks),
         );
     }
   }

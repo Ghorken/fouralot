@@ -10,6 +10,7 @@ import 'package:fouralot/models/game_state.dart';
 import 'package:fouralot/services/network_service.dart';
 import 'package:fouralot/services/ai_service.dart';
 import 'package:fouralot/widgets/game_board.dart';
+import 'package:fouralot/l10n/app_localizations.dart';
 
 class GameScreen extends StatefulWidget {
   final GameConfig config;
@@ -48,6 +49,7 @@ class _GameScreenState extends State<GameScreen> {
   bool get _isAiMode => widget.config.connectionMode == ConnectionMode.ai;
 
   Future<void> _showExitDialog(GameState gs) async {
+    final l10n = context.l10n;
     await showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.55),
@@ -78,7 +80,7 @@ class _GameScreenState extends State<GameScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'USCIRE DALLA PARTITA?',
+                l10n.exitDialogTitle,
                 style: GoogleFonts.orbitron(
                   color: const Color(0xFFFFD700),
                   fontWeight: FontWeight.w800,
@@ -87,8 +89,8 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Se esci adesso la partita verrà persa.',
+              Text(
+                l10n.exitDialogMessage,
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 13,
@@ -112,7 +114,7 @@ class _GameScreenState extends State<GameScreen> {
                         ),
                       ),
                       child: Text(
-                        'ANNULLA',
+                        l10n.cancel,
                         style: GoogleFonts.orbitron(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -141,7 +143,7 @@ class _GameScreenState extends State<GameScreen> {
                         ),
                       ),
                       child: Text(
-                        'ESCI',
+                        l10n.exit,
                         style: GoogleFonts.orbitron(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
@@ -182,6 +184,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _applyRemoteSurrender() {
+    final l10n = context.l10n;
     if (!mounted) return;
     final gs = context.read<GameState>();
     if (!gs.gameOver) {
@@ -190,9 +193,9 @@ class _GameScreenState extends State<GameScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(
-          content: Text('L\'avversario si è ritirato. Vittoria assegnata.'),
-          duration: Duration(milliseconds: 1800),
+        SnackBar(
+          content: Text(l10n.opponentRetiredVictory),
+          duration: const Duration(milliseconds: 1800),
         ),
       );
   }
@@ -213,6 +216,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _handleColumnTap(int col) {
+    final l10n = context.l10n;
     if (!_isMyTurn) return;
     final gs = context.read<GameState>();
     if (gs.gameOver) return;
@@ -225,11 +229,12 @@ class _GameScreenState extends State<GameScreen> {
       setState(() => _blockMode = false);
       if (_isAiMode) _scheduleAiMove();
     } else {
-      _showInvalidMoveToast('Colonna piena, scegli un\'altra colonna');
+      _showInvalidMoveToast(l10n.invalidColumn);
     }
   }
 
   void _handleCellTap(int row, int col) {
+    final l10n = context.l10n;
     if (!_isMyTurn) return;
     final gs = context.read<GameState>();
     if (gs.gameOver) return;
@@ -241,7 +246,7 @@ class _GameScreenState extends State<GameScreen> {
         setState(() => _blockMode = false);
         if (_isAiMode) _scheduleAiMove();
       } else {
-        _showInvalidMoveToast('Non puoi piazzare un blocco qui');
+        _showInvalidMoveToast(l10n.invalidBlockPlacement);
       }
       return;
     }
@@ -268,6 +273,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _handleSidedInsert(Side side, int index) {
+    final l10n = context.l10n;
     if (!_isMyTurn) return;
     final gs = context.read<GameState>();
     if (gs.gameOver) return;
@@ -277,7 +283,7 @@ class _GameScreenState extends State<GameScreen> {
       _sendMove(Move(row: pos[0], col: pos[1], player: widget.playerNumber));
       if (_isAiMode) _scheduleAiMove();
     } else {
-      _showInvalidMoveToast('Mossa non valida: riga/colonna piena');
+      _showInvalidMoveToast(l10n.invalidSideMove);
     }
   }
 
@@ -467,6 +473,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _handleAiLevelProgress(GameState gs) {
+    final l10n = context.l10n;
     if (!_isAiMode) return;
     if (!gs.gameOver) {
       _aiLevelAwarded = false;
@@ -484,9 +491,8 @@ class _GameScreenState extends State<GameScreen> {
           ..hideCurrentSnackBar()
           ..showSnackBar(
             SnackBar(
-              content: Text(
-                'IA livello $currentLevel sconfitta. Prossimo livello: ${currentLevel + 1}',
-              ),
+              content:
+                  Text(l10n.aiLevelDefeated(currentLevel, currentLevel + 1)),
               duration: const Duration(milliseconds: 1800),
             ),
           );
@@ -549,11 +555,8 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildHeader(GameState gs) {
-    String modeName = widget.config.gameMode == GameMode.normal
-        ? 'NORMALE'
-        : widget.config.gameMode == GameMode.fourDirections
-            ? '4 DIREZIONI'
-            : 'BLOCCHI';
+    final l10n = context.l10n;
+    final modeName = l10n.modeName(widget.config.gameMode);
     final levelLabel = _isAiMode ? ' · LV ${widget.config.aiLevel}' : '';
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -586,6 +589,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildPlayerIndicator(GameState gs) {
+    final l10n = context.l10n;
     const p1Color = Color(0xFFFF6B6B);
     const p2Color = Color(0xFFFFD700);
     bool myTurn = _isMyTurn && !gs.gameOver;
@@ -596,8 +600,8 @@ class _GameScreenState extends State<GameScreen> {
         children: [
           _PlayerChip(
             label: _isMultiplayer
-                ? (widget.playerNumber == 1 ? 'TU' : 'Giocatore 1')
-                : 'Giocatore 1',
+                ? (widget.playerNumber == 1 ? l10n.you : l10n.playerN(1))
+                : l10n.playerN(1),
             color: p1Color,
             active: gs.currentPlayer == 1 && !gs.gameOver,
           ),
@@ -614,8 +618,8 @@ class _GameScreenState extends State<GameScreen> {
               ),
               child: Text(
                 myTurn
-                    ? 'IL TUO TURNO'
-                    : (_isAiMode ? 'IA PENSA...' : 'AVVERSARIO'),
+                    ? l10n.yourTurn
+                    : (_isAiMode ? l10n.aiThinking : l10n.opponent),
                 style: GoogleFonts.orbitron(
                   color: myTurn ? Colors.white : Colors.white38,
                   fontSize: 9,
@@ -626,10 +630,10 @@ class _GameScreenState extends State<GameScreen> {
           const Spacer(),
           _PlayerChip(
             label: _isMultiplayer
-                ? (widget.playerNumber == 2 ? 'TU' : 'Giocatore 2')
+                ? (widget.playerNumber == 2 ? l10n.you : l10n.playerN(2))
                 : (_isAiMode
-                    ? 'IA LV ${widget.config.aiLevel}'
-                    : 'Giocatore 2'),
+                    ? l10n.aiLevelChip(widget.config.aiLevel)
+                    : l10n.playerN(2)),
             color: p2Color,
             active: gs.currentPlayer == 2 && !gs.gameOver,
           ),
@@ -639,6 +643,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildBottomBar(GameState gs) {
+    final l10n = context.l10n;
     if (widget.config.gameMode != GameMode.blocks) {
       return const SizedBox(height: 8);
     }
@@ -652,8 +657,8 @@ class _GameScreenState extends State<GameScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('Blocchi: ',
-              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Text(l10n.blocksLabel,
+              style: const TextStyle(color: Colors.white54, fontSize: 12)),
           ...List.generate(
               3,
               (i) => Padding(
@@ -692,7 +697,7 @@ class _GameScreenState extends State<GameScreen> {
                         size: 14),
                     const SizedBox(width: 6),
                     Text(
-                      _blockMode ? 'ANNULLA' : 'PIAZZA BLOCCO',
+                      _blockMode ? l10n.cancel : l10n.placeBlock,
                       style: GoogleFonts.orbitron(
                         color:
                             _blockMode ? Colors.black : const Color(0xFFFFD700),
@@ -711,25 +716,25 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildGameOverBanner(GameState gs) {
+    final l10n = context.l10n;
     String msg;
     Color color;
     if (gs.winner == 0) {
-      msg = 'PAREGGIO!';
+      msg = l10n.draw;
       color = Colors.white;
     } else if (_isAiMode) {
       msg = gs.winner == 1
-          ? '🏆 HAI VINTO! · LV ${widget.config.aiLevel}'
-          : '🤖 IA VINCE · LV ${widget.config.aiLevel}';
+          ? l10n.youWinLevel(widget.config.aiLevel)
+          : l10n.aiWinsLevel(widget.config.aiLevel);
       color =
           gs.winner == 1 ? const Color(0xFFFFD700) : const Color(0xFFFF6B6B);
     } else if (_isMultiplayer) {
-      msg =
-          gs.winner == widget.playerNumber ? '🏆 HAI VINTO!' : '😔 HAI PERSO!';
+      msg = gs.winner == widget.playerNumber ? l10n.youWin : l10n.youLose;
       color = gs.winner == widget.playerNumber
           ? const Color(0xFFFFD700)
           : const Color(0xFFFF6B6B);
     } else {
-      msg = 'GIOCATORE ${gs.winner} VINCE!';
+      msg = l10n.playerWins(gs.winner);
       color =
           gs.winner == 1 ? const Color(0xFFFF6B6B) : const Color(0xFFFFD700);
     }
@@ -760,8 +765,9 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('MENU',
-                    style: TextStyle(color: Colors.white54, letterSpacing: 2)),
+                child: Text(l10n.menu,
+                    style: const TextStyle(
+                        color: Colors.white54, letterSpacing: 2)),
               ),
               const SizedBox(width: 16),
               ElevatedButton(
@@ -774,7 +780,7 @@ class _GameScreenState extends State<GameScreen> {
                       borderRadius: BorderRadius.circular(10)),
                 ),
                 child: Text(
-                  _isAiMode ? 'NUOVA PARTITA' : 'RIVINCITA',
+                  _isAiMode ? l10n.newMatch : l10n.rematch,
                   style: GoogleFonts.orbitron(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,

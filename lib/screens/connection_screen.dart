@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fouralot/models/game_models.dart';
 import 'package:fouralot/services/network_service.dart';
 import 'package:fouralot/screens/game_mode_screen.dart';
+import 'package:fouralot/l10n/app_localizations.dart';
 
 class ConnectionScreen extends StatefulWidget {
   final ConnectionMode connectionMode;
@@ -82,6 +83,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   Widget _buildHeader() {
+    final l10n = context.l10n;
     Color color = const Color(0xFF4ECDC4);
 
     return Row(
@@ -92,7 +94,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         ),
         const SizedBox(width: 16),
         Text(
-          'CONNESSIONE ONLINE',
+          l10n.onlineConnectionTitle,
           style: GoogleFonts.orbitron(
             color: color,
             fontSize: 16,
@@ -105,6 +107,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   Widget _buildOnlineSection() {
+    final l10n = context.l10n;
     final isInternet = widget.connectionMode == ConnectionMode.internet;
 
     return Column(
@@ -114,8 +117,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           _InfoCard(
             icon: Icons.info_outline,
             color: const Color(0xFF4ECDC4),
-            title: 'Il tuo IP',
-            body: 'Condividi questo IP con l\'altro giocatore: $_localIp',
+            title: l10n.yourIpTitle,
+            body: l10n.yourIpBody(_localIp!),
           ),
           const SizedBox(height: 20),
         ],
@@ -123,12 +126,14 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           _InfoCard(
             icon: Icons.public,
             color: const Color(0xFFFBBF24),
-            title: 'Internet Multiplayer',
-            body: 'Crea una stanza e condividi il codice, oppure inserisci un codice per unirti.',
+            title: l10n.internetMultiplayerTitle,
+            body: l10n.internetMultiplayerBody,
           ),
           const SizedBox(height: 20),
         ],
-        if (_networkService.isHost && isInternet && _networkService.generatedRoomCode.isNotEmpty) ...[
+        if (_networkService.isHost &&
+            isInternet &&
+            _networkService.generatedRoomCode.isNotEmpty) ...[
           Container(
             padding: const EdgeInsets.all(16),
             width: double.infinity,
@@ -139,51 +144,69 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             ),
             child: Column(
               children: [
-                Text('CODICE STANZA', style: GoogleFonts.orbitron(color: Colors.white54, fontSize: 11, letterSpacing: 2)),
+                Text(l10n.roomCode,
+                    style: GoogleFonts.orbitron(
+                        color: Colors.white54, fontSize: 11, letterSpacing: 2)),
                 const SizedBox(height: 8),
                 Text(
                   _networkService.generatedRoomCode,
-                  style: GoogleFonts.orbitron(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 8),
+                  style: GoogleFonts.orbitron(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 8),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
         ],
-        Text('CREA PARTITA', style: GoogleFonts.orbitron(color: Colors.white54, fontSize: 11, letterSpacing: 2)),
+        Text(l10n.createMatch,
+            style: GoogleFonts.orbitron(
+                color: Colors.white54, fontSize: 11, letterSpacing: 2)),
         const SizedBox(height: 8),
         _ActionButton(
-          label: 'OSPITA',
+          label: l10n.host,
           icon: isInternet ? Icons.cloud : Icons.dns,
           color: isInternet ? const Color(0xFFFBBF24) : const Color(0xFF4ECDC4),
           loading: _loading && _networkService.isHost,
           onTap: _status.isEmpty ? _hostOnline : null,
         ),
         const SizedBox(height: 20),
-        Text('UNISCITI', style: GoogleFonts.orbitron(color: Colors.white54, fontSize: 11, letterSpacing: 2)),
+        Text(l10n.join,
+            style: GoogleFonts.orbitron(
+                color: Colors.white54, fontSize: 11, letterSpacing: 2)),
         const SizedBox(height: 8),
         TextField(
           controller: _ipController,
           style: const TextStyle(color: Colors.white),
           keyboardType: isInternet ? TextInputType.number : TextInputType.text,
           decoration: InputDecoration(
-            hintText: isInternet ? 'Inserisci codice stanza (es. 12345)' : 'Inserisci IP dell\'host (es. 192.168.1.10)',
+            hintText: isInternet ? l10n.roomCodeHint : l10n.hostIpHint,
             hintStyle: const TextStyle(color: Colors.white38),
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: (isInternet ? const Color(0xFFFBBF24) : const Color(0xFF4ECDC4)).withValues(alpha: 0.3)),
+              borderSide: BorderSide(
+                  color: (isInternet
+                          ? const Color(0xFFFBBF24)
+                          : const Color(0xFF4ECDC4))
+                      .withValues(alpha: 0.3)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: (isInternet ? const Color(0xFFFBBF24) : const Color(0xFF4ECDC4)).withValues(alpha: 0.3)),
+              borderSide: BorderSide(
+                  color: (isInternet
+                          ? const Color(0xFFFBBF24)
+                          : const Color(0xFF4ECDC4))
+                      .withValues(alpha: 0.3)),
             ),
           ),
         ),
         const SizedBox(height: 12),
         _ActionButton(
-          label: 'CONNETTI',
+          label: l10n.connect,
           icon: Icons.link,
           color: isInternet ? const Color(0xFFFBBF24) : const Color(0xFF4ECDC4),
           loading: _loading && !_networkService.isHost,
@@ -201,6 +224,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   Widget _buildContinueButton() {
+    final l10n = context.l10n;
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -209,10 +233,11 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           backgroundColor: const Color(0xFFFFD700),
           foregroundColor: Colors.black,
           padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: Text(
-          _networkService.isHost ? 'SCEGLI MODALITÀ DI GIOCO' : 'VEDI MODALITÀ HOST',
+          _networkService.isHost ? l10n.chooseGameMode : l10n.viewHostMode,
           style: GoogleFonts.orbitron(
             fontWeight: FontWeight.w900,
             fontSize: 14,
@@ -224,17 +249,18 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   String _statusLabel(String s) {
+    final l10n = context.l10n;
     switch (s) {
       case 'connecting':
-        return '⏳ Connessione in corso...';
+        return l10n.statusConnecting;
       case 'hosting':
-        return '⏳ In attesa di un giocatore...';
+        return l10n.statusHosting;
       case 'connected':
-        return '✅ Connesso!';
+        return l10n.statusConnected;
       case 'disconnected':
-        return '❌ Disconnesso';
+        return l10n.statusDisconnected;
       case 'error':
-        return '❌ Errore di connessione';
+        return l10n.statusError;
       default:
         return s;
     }
@@ -312,9 +338,15 @@ class _InfoCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(title,
+                    style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14)),
                 const SizedBox(height: 4),
-                Text(body, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                Text(body,
+                    style:
+                        const TextStyle(color: Colors.white54, fontSize: 12)),
               ],
             ),
           ),
@@ -346,9 +378,12 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: onTap != null ? color.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.03),
+          color: onTap != null
+              ? color.withValues(alpha: 0.15)
+              : Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: onTap != null ? 0.4 : 0.1)),
+          border: Border.all(
+              color: color.withValues(alpha: onTap != null ? 0.4 : 0.1)),
         ),
         child: Row(
           children: [
@@ -356,7 +391,8 @@ class _ActionButton extends StatelessWidget {
                 ? SizedBox(
                     width: 22,
                     height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: color),
+                    child:
+                        CircularProgressIndicator(strokeWidth: 2, color: color),
                   )
                 : Icon(icon, color: color, size: 22),
             const SizedBox(width: 12),

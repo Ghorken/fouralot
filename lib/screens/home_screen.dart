@@ -4,12 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fouralot/screens/connection_screen.dart';
 import 'package:fouralot/screens/game_mode_screen.dart';
 import 'package:fouralot/models/game_models.dart';
+import 'package:fouralot/l10n/app_localizations.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -32,7 +34,7 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'SCEGLI AVVERSARIO',
+                      l10n.chooseOpponent,
                       style: GoogleFonts.orbitron(
                         color: Colors.white54,
                         fontSize: 12,
@@ -42,8 +44,8 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                     _ConnectionButton(
                       icon: Icons.people,
-                      label: 'LOCALE',
-                      subtitle: 'Due giocatori, stesso telefono',
+                      label: l10n.localLabel,
+                      subtitle: l10n.localSubtitle,
                       color: const Color(0xFFFF6B6B),
                       delay: 100,
                       onTap: () => _navigate(context, ConnectionMode.local),
@@ -52,7 +54,7 @@ class HomeScreen extends StatelessWidget {
                     _ConnectionButton(
                       icon: Icons.wifi,
                       label: 'LAN',
-                      subtitle: 'Rete locale (sotto lo stesso Wi-Fi)',
+                      subtitle: l10n.lanSubtitle,
                       color: const Color(0xFF4ECDC4),
                       delay: 200,
                       onTap: () => _navigate(context, ConnectionMode.lan),
@@ -61,7 +63,7 @@ class HomeScreen extends StatelessWidget {
                     _ConnectionButton(
                       icon: Icons.public,
                       label: 'INTERNET',
-                      subtitle: 'Gioca online a distanza',
+                      subtitle: l10n.internetSubtitle,
                       color: const Color(0xFFFBBF24), // an amber/gold color
                       delay: 250,
                       onTap: () => _navigate(context, ConnectionMode.internet),
@@ -69,8 +71,8 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     _ConnectionButton(
                       icon: Icons.smart_toy,
-                      label: 'VS COMPUTER',
-                      subtitle: 'Gioca contro l\'intelligenza artificiale',
+                      label: l10n.vsComputerLabel,
+                      subtitle: l10n.vsComputerSubtitle,
                       color: const Color(0xFFA78BFA),
                       delay: 300,
                       onTap: () => _navigate(context, ConnectionMode.ai),
@@ -90,7 +92,10 @@ class HomeScreen extends StatelessWidget {
     return Column(
       children: [
         // Game board logo
-        _GameLogoWidget().animate().fadeIn(duration: 800.ms).slideY(begin: -0.3, end: 0),
+        _GameLogoWidget()
+            .animate()
+            .fadeIn(duration: 800.ms)
+            .slideY(begin: -0.3, end: 0),
         const SizedBox(height: 16),
         Text(
           '4alot',
@@ -119,7 +124,8 @@ class HomeScreen extends StatelessWidget {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => ConnectionScreen(connectionMode: mode)),
+        MaterialPageRoute(
+            builder: (_) => ConnectionScreen(connectionMode: mode)),
       );
     }
   }
@@ -129,10 +135,42 @@ class _GameLogoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = [
-      [Colors.grey.shade800, Colors.grey.shade800, Colors.grey.shade800, Colors.grey.shade800, Colors.grey.shade800, Colors.grey.shade800, Colors.grey.shade800],
-      [Colors.grey.shade800, Colors.grey.shade800, Colors.grey.shade800, const Color(0xFFFFD700), Colors.grey.shade800, Colors.grey.shade800, Colors.grey.shade800],
-      [Colors.grey.shade800, Colors.grey.shade800, const Color(0xFFFF6B6B), const Color(0xFFFFD700), Colors.grey.shade800, Colors.grey.shade800, Colors.grey.shade800],
-      [Colors.grey.shade800, const Color(0xFFFF6B6B), const Color(0xFFFF6B6B), const Color(0xFFFFD700), const Color(0xFFFFD700), Colors.grey.shade800, Colors.grey.shade800],
+      [
+        Colors.grey.shade800,
+        Colors.grey.shade800,
+        Colors.grey.shade800,
+        Colors.grey.shade800,
+        Colors.grey.shade800,
+        Colors.grey.shade800,
+        Colors.grey.shade800
+      ],
+      [
+        Colors.grey.shade800,
+        Colors.grey.shade800,
+        Colors.grey.shade800,
+        const Color(0xFFFFD700),
+        Colors.grey.shade800,
+        Colors.grey.shade800,
+        Colors.grey.shade800
+      ],
+      [
+        Colors.grey.shade800,
+        Colors.grey.shade800,
+        const Color(0xFFFF6B6B),
+        const Color(0xFFFFD700),
+        Colors.grey.shade800,
+        Colors.grey.shade800,
+        Colors.grey.shade800
+      ],
+      [
+        Colors.grey.shade800,
+        const Color(0xFFFF6B6B),
+        const Color(0xFFFF6B6B),
+        const Color(0xFFFFD700),
+        const Color(0xFFFFD700),
+        Colors.grey.shade800,
+        Colors.grey.shade800
+      ],
     ];
 
     return SizedBox(
@@ -154,7 +192,9 @@ class _GameLogoWidget extends StatelessWidget {
             decoration: BoxDecoration(
               color: c,
               shape: BoxShape.circle,
-              boxShadow: c != Colors.grey.shade800 ? [BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 6)] : null,
+              boxShadow: c != Colors.grey.shade800
+                  ? [BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 6)]
+                  : null,
             ),
           );
         },
@@ -250,7 +290,11 @@ class _ConnectionButtonState extends State<_ConnectionButton> {
               Icon(Icons.arrow_forward_ios, color: widget.color, size: 14),
             ],
           ),
-        ).animate().fadeIn(delay: Duration(milliseconds: widget.delay), duration: 400.ms).slideX(begin: 0.2, end: 0),
+        )
+            .animate()
+            .fadeIn(
+                delay: Duration(milliseconds: widget.delay), duration: 400.ms)
+            .slideX(begin: 0.2, end: 0),
       ),
     );
   }
