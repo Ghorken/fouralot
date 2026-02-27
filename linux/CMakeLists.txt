@@ -7,7 +7,7 @@ project(runner LANGUAGES CXX)
 set(BINARY_NAME "fouralot")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "com.example.fouralot")
+set(APPLICATION_ID "it.smithing_things.fouralot")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
