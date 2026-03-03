@@ -17,7 +17,8 @@ dependencies:
   google_fonts: ^8.0.2
   animate_do: ^4.2.0
   flutter_animate: ^4.5.2
-  mqtt_client: ^10.11.9
+  firebase_core: ^4.5.0
+  firebase_database: ^12.1.4
 
 dev_dependencies:
   flutter_test:

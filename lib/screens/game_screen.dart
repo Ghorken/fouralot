@@ -44,9 +44,7 @@ class _GameScreenState extends State<GameScreen> {
     return gs.currentPlayer == widget.playerNumber;
   }
 
-  bool get _isMultiplayer =>
-      widget.config.connectionMode == ConnectionMode.lan ||
-      widget.config.connectionMode == ConnectionMode.internet;
+  bool get _isMultiplayer => widget.config.connectionMode == ConnectionMode.lan || widget.config.connectionMode == ConnectionMode.internet;
   bool get _isAiMode => widget.config.connectionMode == ConnectionMode.ai;
 
   Future<void> _showExitDialog(GameState gs) async {
@@ -243,8 +241,7 @@ class _GameScreenState extends State<GameScreen> {
 
     if (_blockMode) {
       if (gs.placeBlock(row, col)) {
-        _sendMove(Move(
-            row: row, col: col, player: widget.playerNumber, isBlock: true));
+        _sendMove(Move(row: row, col: col, player: widget.playerNumber, isBlock: true));
         setState(() => _blockMode = false);
         if (_isAiMode) _scheduleAiMove();
       } else {
@@ -261,14 +258,12 @@ class _GameScreenState extends State<GameScreen> {
         SnackBar(
           content: Text(
             msg,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
           backgroundColor: const Color(0xFFFF6B6B).withValues(alpha: 0.9),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           duration: const Duration(milliseconds: 1500),
         ),
       );
@@ -469,8 +464,7 @@ class _GameScreenState extends State<GameScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(width: sideW + hOff),
-                ...List.generate(
-                    cols, (i) => colArrow(Icons.arrow_downward, i, Side.top)),
+                ...List.generate(cols, (i) => colArrow(Icons.arrow_downward, i, Side.top)),
                 SizedBox(width: sideW + hOff),
               ],
             ),
@@ -480,9 +474,7 @@ class _GameScreenState extends State<GameScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Column(
-                    children: List.generate(rows,
-                        (i) => rowArrow(Icons.arrow_forward, i, Side.left))),
+                Column(children: List.generate(rows, (i) => rowArrow(Icons.arrow_forward, i, Side.left))),
                 SizedBox(width: hOff),
                 SizedBox(
                   width: boardW,
@@ -497,9 +489,7 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
                 SizedBox(width: hOff),
-                Column(
-                    children: List.generate(rows,
-                        (i) => rowArrow(Icons.arrow_back, i, Side.right))),
+                Column(children: List.generate(rows, (i) => rowArrow(Icons.arrow_back, i, Side.right))),
               ],
             ),
           ),
@@ -509,8 +499,7 @@ class _GameScreenState extends State<GameScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(width: sideW + hOff),
-                ...List.generate(
-                    cols, (i) => colArrow(Icons.arrow_upward, i, Side.bottom)),
+                ...List.generate(cols, (i) => colArrow(Icons.arrow_upward, i, Side.bottom)),
                 SizedBox(width: sideW + hOff),
               ],
             ),
@@ -539,8 +528,7 @@ class _GameScreenState extends State<GameScreen> {
           ..hideCurrentSnackBar()
           ..showSnackBar(
             SnackBar(
-              content:
-                  Text(l10n.aiLevelDefeated(currentLevel, currentLevel + 1)),
+              content: Text(l10n.aiLevelDefeated(currentLevel, currentLevel + 1)),
               duration: const Duration(milliseconds: 1800),
             ),
           );
@@ -612,8 +600,7 @@ class _GameScreenState extends State<GameScreen> {
         children: [
           GestureDetector(
             onTap: () => _showExitDialog(gs),
-            child: const Icon(Icons.arrow_back_ios,
-                color: Colors.white70, size: 26),
+            child: const Icon(Icons.arrow_back_ios, color: Colors.white70, size: 26),
           ),
           const SizedBox(width: 12),
           Text(
@@ -647,9 +634,7 @@ class _GameScreenState extends State<GameScreen> {
       child: Row(
         children: [
           _PlayerChip(
-            label: _isMultiplayer
-                ? (widget.playerNumber == 1 ? l10n.you : l10n.playerN(1))
-                : l10n.playerN(1),
+            label: _isMultiplayer ? (widget.playerNumber == 1 ? l10n.you : l10n.playerN(1)) : l10n.playerN(1),
             color: p1Color,
             active: gs.currentPlayer == 1 && !gs.gameOver,
           ),
@@ -659,15 +644,11 @@ class _GameScreenState extends State<GameScreen> {
               duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: myTurn
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.transparent,
+                color: myTurn ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                myTurn
-                    ? l10n.yourTurn
-                    : (_isAiMode ? l10n.aiThinking : l10n.opponent),
+                myTurn ? l10n.yourTurn : (_isAiMode ? l10n.aiThinking : l10n.opponent),
                 style: GoogleFonts.orbitron(
                   color: myTurn ? Colors.white : Colors.white38,
                   fontSize: 9,
@@ -677,11 +658,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
           const Spacer(),
           _PlayerChip(
-            label: _isMultiplayer
-                ? (widget.playerNumber == 2 ? l10n.you : l10n.playerN(2))
-                : (_isAiMode
-                    ? l10n.aiLevelChip(widget.config.aiLevel)
-                    : l10n.playerN(2)),
+            label: _isMultiplayer ? (widget.playerNumber == 2 ? l10n.you : l10n.playerN(2)) : (_isAiMode ? l10n.aiLevelChip(widget.config.aiLevel) : l10n.playerN(2)),
             color: p2Color,
             active: gs.currentPlayer == 2 && !gs.gameOver,
           ),
@@ -705,17 +682,14 @@ class _GameScreenState extends State<GameScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(l10n.blocksLabel,
-              style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          Text(l10n.blocksLabel, style: const TextStyle(color: Colors.white54, fontSize: 12)),
           ...List.generate(
               3,
               (i) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
                     child: Icon(
                       Icons.square,
-                      color: i < blocksLeft
-                          ? const Color(0xFFFFD700)
-                          : Colors.white12,
+                      color: i < blocksLeft ? const Color(0xFFFFD700) : Colors.white12,
                       size: 18,
                     ),
                   )),
@@ -725,12 +699,9 @@ class _GameScreenState extends State<GameScreen> {
               onTap: () => setState(() => _blockMode = !_blockMode),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _blockMode
-                      ? const Color(0xFFFFD700)
-                      : Colors.white.withValues(alpha: 0.1),
+                  color: _blockMode ? const Color(0xFFFFD700) : Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: const Color(0xFFFFD700).withValues(alpha: 0.5),
@@ -739,16 +710,12 @@ class _GameScreenState extends State<GameScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.square,
-                        color:
-                            _blockMode ? Colors.black : const Color(0xFFFFD700),
-                        size: 14),
+                    Icon(Icons.square, color: _blockMode ? Colors.black : const Color(0xFFFFD700), size: 14),
                     const SizedBox(width: 6),
                     Text(
                       _blockMode ? l10n.cancel : l10n.placeBlock,
                       style: GoogleFonts.orbitron(
-                        color:
-                            _blockMode ? Colors.black : const Color(0xFFFFD700),
+                        color: _blockMode ? Colors.black : const Color(0xFFFFD700),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1,
@@ -771,20 +738,14 @@ class _GameScreenState extends State<GameScreen> {
       msg = l10n.draw;
       color = Colors.white;
     } else if (_isAiMode) {
-      msg = gs.winner == 1
-          ? l10n.youWinLevel(widget.config.aiLevel)
-          : l10n.aiWinsLevel(widget.config.aiLevel);
-      color =
-          gs.winner == 1 ? const Color(0xFFFFD700) : const Color(0xFFFF6B6B);
+      msg = gs.winner == 1 ? l10n.youWinLevel(widget.config.aiLevel) : l10n.aiWinsLevel(widget.config.aiLevel);
+      color = gs.winner == 1 ? const Color(0xFFFFD700) : const Color(0xFFFF6B6B);
     } else if (_isMultiplayer) {
       msg = gs.winner == widget.playerNumber ? l10n.youWin : l10n.youLose;
-      color = gs.winner == widget.playerNumber
-          ? const Color(0xFFFFD700)
-          : const Color(0xFFFF6B6B);
+      color = gs.winner == widget.playerNumber ? const Color(0xFFFFD700) : const Color(0xFFFF6B6B);
     } else {
       msg = l10n.playerWins(gs.winner);
-      color =
-          gs.winner == 1 ? const Color(0xFFFF6B6B) : const Color(0xFFFFD700);
+      color = gs.winner == 1 ? const Color(0xFFFF6B6B) : const Color(0xFFFFD700);
     }
 
     return Container(
@@ -813,9 +774,7 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(l10n.menu,
-                    style: const TextStyle(
-                        color: Colors.white54, letterSpacing: 2)),
+                child: Text(l10n.menu, style: const TextStyle(color: Colors.white54, letterSpacing: 2)),
               ),
               const SizedBox(width: 16),
               ElevatedButton(
@@ -827,25 +786,18 @@ class _GameScreenState extends State<GameScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: Text(
                   _isAiMode ? l10n.newMatch : l10n.rematch,
-                  style: GoogleFonts.orbitron(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 2),
+                  style: GoogleFonts.orbitron(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 2),
                 ),
               ),
             ],
           ),
         ],
       ),
-    )
-        .animate()
-        .fadeIn(duration: 500.ms)
-        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
+    ).animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
   }
 }
 
@@ -854,8 +806,7 @@ class _PlayerChip extends StatelessWidget {
   final Color color;
   final bool active;
 
-  const _PlayerChip(
-      {required this.label, required this.color, required this.active});
+  const _PlayerChip({required this.label, required this.color, required this.active});
 
   @override
   Widget build(BuildContext context) {
@@ -876,12 +827,7 @@ class _PlayerChip extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              boxShadow: active
-                  ? [
-                      BoxShadow(
-                          color: color.withValues(alpha: 0.5), blurRadius: 6)
-                    ]
-                  : null,
+              boxShadow: active ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6)] : null,
             ),
           ),
           const SizedBox(width: 6),
@@ -917,8 +863,7 @@ class _CoinFlipDialog extends StatefulWidget {
   State<_CoinFlipDialog> createState() => _CoinFlipDialogState();
 }
 
-class _CoinFlipDialogState extends State<_CoinFlipDialog>
-    with SingleTickerProviderStateMixin {
+class _CoinFlipDialogState extends State<_CoinFlipDialog> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   bool _revealed = false;
 
@@ -965,8 +910,7 @@ class _CoinFlipDialogState extends State<_CoinFlipDialog>
         resultColor = p1Color;
       }
     } else if (widget.isAiMode) {
-      resultText =
-          widget.winner == 1 ? l10n.coinFlipYouStart : l10n.coinFlipAiStarts;
+      resultText = widget.winner == 1 ? l10n.coinFlipYouStart : l10n.coinFlipAiStarts;
       resultColor = widget.winner == 1 ? p2Color : p1Color;
     } else {
       resultText = l10n.coinFlipPlayerStarts(widget.winner);
@@ -977,8 +921,7 @@ class _CoinFlipDialogState extends State<_CoinFlipDialog>
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 40),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
@@ -1013,17 +956,13 @@ class _CoinFlipDialogState extends State<_CoinFlipDialog>
               animation: _controller,
               builder: (context, _) {
                 final t = _controller.value;
-                final scaleX = _revealed
-                    ? 1.0
-                    : cos(t * 2 * pi).abs().clamp(0.05, 1.0);
-                final showPlayer1 = _revealed
-                    ? widget.winner == 1
-                    : cos(t * 2 * pi) >= 0;
+                final scaleX = _revealed ? 1.0 : cos(t * 2 * pi).abs().clamp(0.05, 1.0);
+                final showPlayer1 = _revealed ? widget.winner == 1 : cos(t * 2 * pi) >= 0;
                 final faceColor = showPlayer1 ? p1Color : p2Color;
 
                 return Transform(
                   alignment: Alignment.center,
-                  transform: Matrix4.identity()..scale(scaleX, 1.0),
+                  transform: Matrix4.identity()..scaleByDouble(scaleX, 1.0, 1.0, 1.0),
                   child: Container(
                     width: 90,
                     height: 90,
@@ -1076,10 +1015,7 @@ class _CoinFlipDialogState extends State<_CoinFlipDialog>
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.5,
                     ),
-                  )
-                      .animate()
-                      .fadeIn(duration: 400.ms)
-                      .scale(begin: const Offset(0.8, 0.8)),
+                  ).animate().fadeIn(duration: 400.ms).scale(begin: const Offset(0.8, 0.8)),
                   const SizedBox(height: 12),
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),

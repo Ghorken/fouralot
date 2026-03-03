@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "611191579134",
+    "firebase_url": "https://alot-feaec-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "alot-feaec",
+    "storage_bucket": "alot-feaec.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:611191579134:android:f9c9505b87e413c37b60af",
+        "android_client_info": {
+          "package_name": "it.smithing_things.fouralot"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpqa-GcesfA0VTJX0IYk8r0cbZkal5PWk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
