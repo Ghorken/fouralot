@@ -148,6 +148,18 @@ class AppLocalizations {
   String get menu => _it ? 'MENU' : 'MENU';
   String get newMatch => _it ? 'NUOVA PARTITA' : 'NEW MATCH';
   String get rematch => _it ? 'RIVINCITA' : 'REMATCH';
+
+  String get coinFlipTitle => _it ? 'LANCIO DELLA MONETA' : 'COIN FLIP';
+  String get coinFlipFlipping => _it ? 'Lancio in corso...' : 'Flipping...';
+  String get coinFlipTapToContinue =>
+      _it ? 'Tocca per continuare' : 'Tap to continue';
+  String get coinFlipYouStart => _it ? 'Inizi tu!' : 'You go first!';
+  String get coinFlipOpponentStarts =>
+      _it ? "L'avversario inizia!" : 'Opponent goes first!';
+  String get coinFlipAiStarts =>
+      _it ? "L'IA inizia!" : 'The AI goes first!';
+  String coinFlipPlayerStarts(int player) =>
+      _it ? 'Inizia il Giocatore $player!' : 'Player $player goes first!';
 }
 
 class _AppLocalizationsDelegate

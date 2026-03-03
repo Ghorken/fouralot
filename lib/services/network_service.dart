@@ -23,6 +23,8 @@ class NetworkService {
       StreamController.broadcast();
   final StreamController<String> _statusController =
       StreamController.broadcast();
+  final StreamController<int> _coinFlipController =
+      StreamController.broadcast();
   ConnectionMode mode = ConnectionMode.lan;
 
   Stream<Move> get onMove => _moveController.stream;
@@ -30,6 +32,7 @@ class NetworkService {
   Stream<GameMode> get onModeAccepted => _modeAcceptedController.stream;
   Stream<void> get onSurrender => _surrenderController.stream;
   Stream<String> get onStatus => _statusController.stream;
+  Stream<int> get onCoinFlip => _coinFlipController.stream;
 
   // ─── LAN State (Sockets) ─────────────────────────────────────────────────
 
@@ -241,6 +244,15 @@ class NetworkService {
     }
   }
 
+  void sendCoinFlip(int winner) {
+    final payload = jsonEncode({'type': 'coin_flip', 'winner': winner});
+    if (mode == ConnectionMode.lan) {
+      _socket?.write('$payload\n');
+    } else if (mode == ConnectionMode.internet) {
+      _sendMqttRaw(payload);
+    }
+  }
+
   void _handleIncomingPayload(String raw) {
     final payload = raw.trim();
     if (payload.isEmpty) return;
@@ -265,6 +277,11 @@ class NetworkService {
       }
       if (type == 'surrender') {
         _surrenderController.add(null);
+        return;
+      }
+      if (type == 'coin_flip') {
+        final winner = json['winner'] as int?;
+        if (winner != null) _coinFlipController.add(winner);
         return;
       }
       if (json.containsKey('row') &&
@@ -311,5 +328,6 @@ class NetworkService {
     _modeAcceptedController.close();
     _surrenderController.close();
     _statusController.close();
+    _coinFlipController.close();
   }
 }

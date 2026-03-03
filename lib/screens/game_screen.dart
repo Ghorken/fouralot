@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -167,6 +168,7 @@ class _GameScreenState extends State<GameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _gameState = context.read<GameState>();
       _gameState.startGame(widget.config);
+      _initCoinFlip();
     });
 
     // Listen for remote moves
@@ -285,6 +287,52 @@ class _GameScreenState extends State<GameScreen> {
     } else {
       _showInvalidMoveToast(l10n.invalidSideMove);
     }
+  }
+
+  Future<void> _initCoinFlip() async {
+    if (!mounted) return;
+    final int winner;
+    if (_isMultiplayer) {
+      if (widget.networkService!.isHost) {
+        // Give the client time to start listening before sending
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
+        winner = Random().nextInt(2) + 1;
+        _gameState.setStartingPlayer(winner);
+        widget.networkService!.sendCoinFlip(winner);
+      } else {
+        winner = await widget.networkService!.onCoinFlip.first;
+        if (!mounted) return;
+        _gameState.setStartingPlayer(winner);
+      }
+    } else {
+      winner = Random().nextInt(2) + 1;
+      _gameState.setStartingPlayer(winner);
+    }
+    await _showCoinFlipDialog(winner);
+    if (_isAiMode && winner == 2) _scheduleAiMove();
+  }
+
+  Future<void> _showCoinFlipDialog(int winner) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      builder: (_) => _CoinFlipDialog(
+        winner: winner,
+        playerNumber: widget.playerNumber,
+        isMultiplayer: _isMultiplayer,
+        isAiMode: _isAiMode,
+      ),
+    );
+  }
+
+  Future<void> _doLocalRematch(GameState gs) async {
+    gs.resetBoard();
+    final winner = Random().nextInt(2) + 1;
+    gs.setStartingPlayer(winner);
+    await _showCoinFlipDialog(winner);
   }
 
   /// Schedules the AI move after a short delay for a natural feel.
@@ -771,8 +819,11 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(width: 16),
               ElevatedButton(
-                onPressed:
-                    _isAiMode ? _startNextAiMatch : () => gs.resetBoard(),
+                onPressed: _isAiMode
+                    ? _startNextAiMatch
+                    : _isMultiplayer
+                        ? () => gs.resetBoard()
+                        : () => _doLocalRematch(gs),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.black,
@@ -844,6 +895,215 @@ class _PlayerChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CoinFlipDialog extends StatefulWidget {
+  final int winner;
+  final int playerNumber;
+  final bool isMultiplayer;
+  final bool isAiMode;
+
+  const _CoinFlipDialog({
+    required this.winner,
+    required this.playerNumber,
+    required this.isMultiplayer,
+    required this.isAiMode,
+  });
+
+  @override
+  State<_CoinFlipDialog> createState() => _CoinFlipDialogState();
+}
+
+class _CoinFlipDialogState extends State<_CoinFlipDialog>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool _revealed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    )..repeat();
+
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) {
+        _controller.stop();
+        setState(() => _revealed = true);
+      }
+    });
+
+    Future.delayed(const Duration(milliseconds: 4500), () {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    const p1Color = Color(0xFFFF6B6B);
+    const p2Color = Color(0xFFFFD700);
+
+    final String resultText;
+    final Color resultColor;
+    if (widget.isMultiplayer) {
+      if (widget.winner == widget.playerNumber) {
+        resultText = l10n.coinFlipYouStart;
+        resultColor = p2Color;
+      } else {
+        resultText = l10n.coinFlipOpponentStarts;
+        resultColor = p1Color;
+      }
+    } else if (widget.isAiMode) {
+      resultText =
+          widget.winner == 1 ? l10n.coinFlipYouStart : l10n.coinFlipAiStarts;
+      resultColor = widget.winner == 1 ? p2Color : p1Color;
+    } else {
+      resultText = l10n.coinFlipPlayerStarts(widget.winner);
+      resultColor = widget.winner == 1 ? p1Color : p2Color;
+    }
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A1A3E), Color(0xFF0F0C29)],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: const Color(0xFFFFD700).withValues(alpha: 0.35),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withValues(alpha: 0.12),
+              blurRadius: 32,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.coinFlipTitle,
+              style: GoogleFonts.orbitron(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 28),
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                final t = _controller.value;
+                final scaleX = _revealed
+                    ? 1.0
+                    : cos(t * 2 * pi).abs().clamp(0.05, 1.0);
+                final showPlayer1 = _revealed
+                    ? widget.winner == 1
+                    : cos(t * 2 * pi) >= 0;
+                final faceColor = showPlayer1 ? p1Color : p2Color;
+
+                return Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()..scale(scaleX, 1.0),
+                  child: Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        center: const Alignment(-0.3, -0.3),
+                        radius: 0.8,
+                        colors: [
+                          faceColor.withValues(alpha: 0.9),
+                          faceColor.withValues(alpha: 0.5),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: faceColor.withValues(alpha: 0.4),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        showPlayer1 ? '1' : '2',
+                        style: GoogleFonts.orbitron(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            if (_revealed)
+              Column(
+                children: [
+                  Text(
+                    resultText,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.orbitron(
+                      color: resultColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.5,
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(duration: 400.ms)
+                      .scale(begin: const Offset(0.8, 0.8)),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Text(
+                      l10n.coinFlipTapToContinue,
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 700.ms, duration: 400.ms),
+                ],
+              )
+            else
+              Text(
+                l10n.coinFlipFlipping,
+                style: GoogleFonts.orbitron(
+                  color: Colors.white38,
+                  fontSize: 10,
+                  letterSpacing: 1.5,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

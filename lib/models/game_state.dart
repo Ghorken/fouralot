@@ -51,6 +51,11 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setStartingPlayer(int player) {
+    currentPlayer = player;
+    notifyListeners();
+  }
+
   void resetBoard() {
     board = List.generate(rows, (_) => List.filled(cols, CellContent.empty));
     currentPlayer = 1;
