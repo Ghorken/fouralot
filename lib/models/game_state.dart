@@ -172,7 +172,7 @@ class GameState extends ChangeNotifier {
       return;
     }
 
-    // Check draw
+    // Check draw: board full
     bool full =
         board.every((row) => row.every((cell) => cell != CellContent.empty));
     if (full) {
@@ -182,8 +182,53 @@ class GameState extends ChangeNotifier {
       return;
     }
 
+    // Check draw: next player has no valid moves
+    if (_nextPlayerHasNoMoves()) {
+      winner = 0;
+      gameOver = true;
+      notifyListeners();
+      return;
+    }
+
     currentPlayer = currentPlayer == 1 ? 2 : 1;
     notifyListeners();
+  }
+
+  /// Returns true when the player who is about to move (next turn) has no valid moves.
+  bool _nextPlayerHasNoMoves() {
+    final int next = currentPlayer == 1 ? 2 : 1;
+
+    if (config?.gameMode == GameMode.normal) {
+      // Normal: can drop in any column that still has an empty cell
+      for (int c = 0; c < cols; c++) {
+        if (_findLowestEmpty(c) != -1) return false;
+      }
+      return true;
+    }
+
+    // Four-directions / Blocks: pieces enter through border cells.
+    // A move is possible only if at least one entry cell is empty.
+    for (int r = 0; r < rows; r++) {
+      if (board[r][0] == CellContent.empty) return false;       // left entry
+      if (board[r][cols - 1] == CellContent.empty) return false; // right entry
+    }
+    for (int c = 0; c < cols; c++) {
+      if (board[0][c] == CellContent.empty) return false;        // top entry
+      if (board[rows - 1][c] == CellContent.empty) return false; // bottom entry
+    }
+
+    // No insertion is possible. In blocks mode the next player may still
+    // place a block on any empty interior cell (if they have blocks left).
+    if (config?.gameMode == GameMode.blocks) {
+      final int nextBlocks = next == 1 ? blocksRemaining1 : blocksRemaining2;
+      if (nextBlocks > 0) {
+        for (final row in board) {
+          if (row.any((cell) => cell == CellContent.empty)) return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   List<List<int>>? _findWinningCells() {

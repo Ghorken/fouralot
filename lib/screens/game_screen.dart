@@ -34,6 +34,8 @@ class _GameScreenState extends State<GameScreen> {
   bool _blockMode = false; // true when player wants to place a block
   bool _aiLevelAwarded = false;
   late GameState _gameState;
+  Timer? _turnTimer;
+  int _remainingSeconds = 30;
 
   bool get _isMyTurn {
     final gs = context.read<GameState>();
@@ -178,9 +180,47 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  void _startTurnTimer() {
+    _cancelTurnTimer();
+    if (!mounted) return;
+    setState(() => _remainingSeconds = 30);
+    _turnTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) {
+        _cancelTurnTimer();
+        return;
+      }
+      final gs = context.read<GameState>();
+      if (gs.gameOver) {
+        _cancelTurnTimer();
+        return;
+      }
+      setState(() => _remainingSeconds--);
+      if (_remainingSeconds <= 0) {
+        _cancelTurnTimer();
+        _handleTurnTimeout();
+      }
+    });
+  }
+
+  void _cancelTurnTimer() {
+    _turnTimer?.cancel();
+    _turnTimer = null;
+  }
+
+  void _handleTurnTimeout() {
+    final gs = context.read<GameState>();
+    if (gs.gameOver) return;
+    if (_isMultiplayer) {
+      widget.networkService?.sendSurrender();
+    }
+    gs.abandonGame();
+  }
+
   void _applyRemote(Move move) {
     if (!mounted) return;
-    context.read<GameState>().applyRemoteMove(move);
+    final gs = context.read<GameState>();
+    gs.applyRemoteMove(move);
+    if (!gs.gameOver && _isMyTurn) _startTurnTimer();
   }
 
   void _applyRemoteSurrender() {
@@ -204,6 +244,7 @@ class _GameScreenState extends State<GameScreen> {
   void dispose() {
     _moveSub?.cancel();
     _surrenderSub?.cancel();
+    _cancelTurnTimer();
     // Defer reset to next frame: notifyListeners() cannot fire while the tree is locked
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _gameState.resetBoard();
@@ -227,7 +268,14 @@ class _GameScreenState extends State<GameScreen> {
       final move = Move(row: -1, col: col, player: widget.playerNumber);
       _sendMove(move);
       setState(() => _blockMode = false);
-      if (_isAiMode) _scheduleAiMove();
+      if (_isAiMode) {
+        _cancelTurnTimer();
+        _scheduleAiMove();
+      } else if (_isMultiplayer) {
+        _cancelTurnTimer();
+      } else {
+        _startTurnTimer();
+      }
     } else {
       _showInvalidMoveToast(l10n.invalidColumn);
     }
@@ -243,7 +291,14 @@ class _GameScreenState extends State<GameScreen> {
       if (gs.placeBlock(row, col)) {
         _sendMove(Move(row: row, col: col, player: widget.playerNumber, isBlock: true));
         setState(() => _blockMode = false);
-        if (_isAiMode) _scheduleAiMove();
+        if (_isAiMode) {
+          _cancelTurnTimer();
+          _scheduleAiMove();
+        } else if (_isMultiplayer) {
+          _cancelTurnTimer();
+        } else {
+          _startTurnTimer();
+        }
       } else {
         _showInvalidMoveToast(l10n.invalidBlockPlacement);
       }
@@ -278,7 +333,14 @@ class _GameScreenState extends State<GameScreen> {
     final pos = gs.insertFromSide(side, index);
     if (pos != null) {
       _sendMove(Move(row: pos[0], col: pos[1], player: widget.playerNumber));
-      if (_isAiMode) _scheduleAiMove();
+      if (_isAiMode) {
+        _cancelTurnTimer();
+        _scheduleAiMove();
+      } else if (_isMultiplayer) {
+        _cancelTurnTimer();
+      } else {
+        _startTurnTimer();
+      }
     } else {
       _showInvalidMoveToast(l10n.invalidSideMove);
     }
@@ -306,6 +368,7 @@ class _GameScreenState extends State<GameScreen> {
     }
     await _showCoinFlipDialog(winner);
     if (_isAiMode && winner == 2) _scheduleAiMove();
+    if (_isMyTurn) _startTurnTimer();
   }
 
   Future<void> _showCoinFlipDialog(int winner) async {
@@ -328,6 +391,7 @@ class _GameScreenState extends State<GameScreen> {
     final winner = Random().nextInt(2) + 1;
     gs.setStartingPlayer(winner);
     await _showCoinFlipDialog(winner);
+    _startTurnTimer();
   }
 
   /// Schedules the AI move after a short delay for a natural feel.
@@ -354,6 +418,8 @@ class _GameScreenState extends State<GameScreen> {
       // For 4-directions: move.row = side.index, move.col = index
       gs.insertFromSide(Side.values[move.row], move.col);
     }
+
+    if (!gs.gameOver) _startTurnTimer();
   }
 
   /// Builds the board area. Uses [LayoutBuilder] to compute exact per-cell dimensions so arrows are pixel-aligned.
@@ -562,6 +628,7 @@ class _GameScreenState extends State<GameScreen> {
     return Consumer<GameState>(
       builder: (context, gs, _) {
         _handleAiLevelProgress(gs);
+        if (gs.gameOver) _cancelTurnTimer();
         return Scaffold(
           body: Container(
             decoration: const BoxDecoration(
@@ -647,13 +714,33 @@ class _GameScreenState extends State<GameScreen> {
                 color: myTurn ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(
-                myTurn ? l10n.yourTurn : (_isAiMode ? l10n.aiThinking : l10n.opponent),
-                style: GoogleFonts.orbitron(
-                  color: myTurn ? Colors.white : Colors.white38,
-                  fontSize: 9,
-                  letterSpacing: 1,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    myTurn ? l10n.yourTurn : (_isAiMode ? l10n.aiThinking : l10n.opponent),
+                    style: GoogleFonts.orbitron(
+                      color: myTurn ? Colors.white : Colors.white38,
+                      fontSize: 9,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  if (myTurn && _turnTimer != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '$_remainingSeconds',
+                        style: GoogleFonts.orbitron(
+                          color: _remainingSeconds > 10
+                              ? const Color(0xFF4ECDC4)
+                              : const Color(0xFFFF6B6B),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           const Spacer(),
@@ -781,7 +868,10 @@ class _GameScreenState extends State<GameScreen> {
                 onPressed: _isAiMode
                     ? _startNextAiMatch
                     : _isMultiplayer
-                        ? () => gs.resetBoard()
+                        ? () {
+                            gs.resetBoard();
+                            if (_isMyTurn) _startTurnTimer();
+                          }
                         : () => _doLocalRematch(gs),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
