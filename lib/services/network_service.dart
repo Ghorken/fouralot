@@ -1,19 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:math';
+import 'dart:typed_data';
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:fouralot/models/game_models.dart';
-import 'package:mqtt_client/mqtt_client.dart';
-import 'package:mqtt_client/mqtt_server_client.dart';
 
-/// Handles both LAN (TCP sockets) and Internet (MQTT) multiplayer connections.
+/// Handles both LAN (TCP sockets) and Internet (Firebase Realtime Database)
+/// multiplayer connections.
 class NetworkService {
-  // ─── Shared State ────────────────────────────────────────────────────────
+  // ─── Shared State ──────────────────────────────────────────────────────────
 
   bool isHost = false;
   int playerNumber = 1;
+  ConnectionMode mode = ConnectionMode.lan;
+
   final StreamController<Move> _moveController = StreamController.broadcast();
   final StreamController<GameMode> _modeController =
       StreamController.broadcast();
@@ -25,7 +27,6 @@ class NetworkService {
       StreamController.broadcast();
   final StreamController<int> _coinFlipController =
       StreamController.broadcast();
-  ConnectionMode mode = ConnectionMode.lan;
 
   Stream<Move> get onMove => _moveController.stream;
   Stream<GameMode> get onModeSelected => _modeController.stream;
@@ -34,20 +35,21 @@ class NetworkService {
   Stream<String> get onStatus => _statusController.stream;
   Stream<int> get onCoinFlip => _coinFlipController.stream;
 
-  // ─── LAN State (Sockets) ─────────────────────────────────────────────────
+  // ─── LAN State (TCP sockets) ───────────────────────────────────────────────
 
   ServerSocket? _server;
   Socket? _socket;
   StreamSubscription? _socketSub;
 
-  // ─── Internet State (MQTT) ───────────────────────────────────────────────
+  // ─── Internet State (Firebase Realtime Database) ──────────────────────────
 
-  MqttServerClient? _mqttClient;
+  DatabaseReference? _roomRef;
+  StreamSubscription? _messagesSub;
+  StreamSubscription? _joinedSub;
   String? _roomCode;
-  String? _myTopic;
-  String? _oppTopic;
+  String _myKey = 'p1'; // 'p1' for host, 'p2' for guest
 
-  // ─── LAN Methods ─────────────────────────────────────────────────────────
+  // ─── LAN Methods ──────────────────────────────────────────────────────────
 
   Future<String?> getLocalIp() async {
     try {
@@ -77,7 +79,7 @@ class NetworkService {
         _listenToSocket();
       });
       return true;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }
@@ -92,7 +94,7 @@ class NetworkService {
       _statusController.add('connected');
       _listenToSocket();
       return true;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }
@@ -104,7 +106,9 @@ class NetworkService {
         for (var line in msg.split('\n')) {
           line = line.trim();
           if (line.isEmpty) continue;
-          _handleIncomingPayload(line);
+          try {
+            _dispatchMessage(jsonDecode(line) as Map<String, dynamic>);
+          } catch (_) {}
         }
       },
       onDone: () => _statusController.add('disconnected'),
@@ -112,57 +116,38 @@ class NetworkService {
     );
   }
 
-  // ─── Internet Methods (MQTT) ─────────────────────────────────────────────
+  // ─── Internet Methods (Firebase) ──────────────────────────────────────────
 
   String get generatedRoomCode => _roomCode ?? '';
-
-  Future<MqttServerClient> _setupMqtt() async {
-    final client = MqttServerClient('test.mosquitto.org', '');
-    client.port = 1883;
-    client.logging(on: false);
-    client.keepAlivePeriod = 20;
-    client.onDisconnected = () => _statusController.add('disconnected');
-    client.onConnected = () {
-      client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> c) {
-        final MqttPublishMessage recMess = c[0].payload as MqttPublishMessage;
-        final String pt =
-            MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
-        _handleIncomingPayload(pt);
-      });
-    };
-    final connMess = MqttConnectMessage()
-        .withClientIdentifier('fouralot_${Random().nextInt(100000)}')
-        .startClean();
-    client.connectionMessage = connMess;
-
-    try {
-      await client.connect();
-    } catch (e) {
-      client.disconnect();
-      rethrow;
-    }
-    return client;
-  }
 
   Future<bool> startInternetHost() async {
     try {
       mode = ConnectionMode.internet;
       isHost = true;
       playerNumber = 1;
+      _myKey = 'p1';
       _statusController.add('connecting');
 
-      _mqttClient = await _setupMqtt();
-
-      // Generate a Random 5 digit Room Code
       _roomCode = (10000 + Random().nextInt(90000)).toString();
-      _myTopic = 'fouralot/room_$_roomCode/p1';
-      _oppTopic = 'fouralot/room_$_roomCode/p2';
+      _roomRef = FirebaseDatabase.instance.ref('fouralot_rooms/$_roomCode');
 
-      _mqttClient!.subscribe(_oppTopic!, MqttQos.atMostOnce);
+      // Create room; Firebase auto-deletes it if the host disconnects.
+      await _roomRef!.set({'p2_joined': false});
+      await _roomRef!.onDisconnect().remove();
+
+      // Watch for the guest to join.
+      _joinedSub = _roomRef!.child('p2_joined').onValue.listen((event) {
+        if (event.snapshot.value == true) {
+          _joinedSub?.cancel();
+          _joinedSub = null;
+          _listenToFirebaseMessages();
+          _statusController.add('connected');
+        }
+      });
 
       _statusController.add('hosting');
       return true;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }
@@ -172,124 +157,114 @@ class NetworkService {
       mode = ConnectionMode.internet;
       isHost = false;
       playerNumber = 2;
+      _myKey = 'p2';
       _statusController.add('connecting');
 
-      _mqttClient = await _setupMqtt();
-
       _roomCode = code.trim();
-      _myTopic = 'fouralot/room_$_roomCode/p2';
-      _oppTopic = 'fouralot/room_$_roomCode/p1';
+      _roomRef = FirebaseDatabase.instance.ref('fouralot_rooms/$_roomCode');
 
-      _mqttClient!.subscribe(_oppTopic!, MqttQos.atMostOnce);
+      // Verify the room exists before joining.
+      final snap = await _roomRef!.get();
+      if (!snap.exists) {
+        _statusController.add('error');
+        return false;
+      }
 
-      // Send a joined ping
-      _sendMqttRaw('JOINED');
+      // Start listening BEFORE signalling join to avoid missing fast messages.
+      _listenToFirebaseMessages();
+
+      await _roomRef!.child('p2_joined').set(true);
+      // Firebase resets p2_joined if the guest disconnects ungracefully.
+      await _roomRef!.child('p2_joined').onDisconnect().remove();
 
       _statusController.add('connected');
       return true;
-    } catch (e) {
+    } catch (_) {
+      _statusController.add('error');
       return false;
     }
   }
 
-  void _sendMqttRaw(String data) {
-    if (_mqttClient == null || _myTopic == null) return;
-    final builder = MqttClientPayloadBuilder();
-    builder.addString(data);
-    _mqttClient!
-        .publishMessage(_myTopic!, MqttQos.atMostOnce, builder.payload!);
-  }
+  /// Subscribes to the Firebase messages queue and dispatches incoming
+  /// messages from the opponent.
+  void _listenToFirebaseMessages() {
+    if (_roomRef == null) return;
+    final oppKey = _myKey == 'p1' ? 'p2' : 'p1';
 
-  // ─── Unified Send ────────────────────────────────────────────────────────
-
-  void sendMove(Move move) {
-    final payload = jsonEncode(move.toJson());
-    if (mode == ConnectionMode.lan) {
-      _socket?.write('$payload\n');
-    } else if (mode == ConnectionMode.internet) {
-      _sendMqttRaw(payload);
-    }
-  }
-
-  void sendSelectedMode(GameMode gameMode) {
-    final payload = jsonEncode({
-      'type': 'mode_selected',
-      'mode': _gameModeToWire(gameMode),
+    _messagesSub =
+        _roomRef!.child('messages').onChildAdded.listen((event) {
+      final raw = event.snapshot.value;
+      if (raw == null) return;
+      final data = Map<String, dynamic>.from(raw as Map);
+      // Only process messages sent by the opponent.
+      if (data['from'] != oppKey) return;
+      final payload = data['payload'] as String?;
+      if (payload == null) return;
+      try {
+        _dispatchMessage(jsonDecode(payload) as Map<String, dynamic>);
+      } catch (_) {}
     });
-    if (mode == ConnectionMode.lan) {
-      _socket?.write('$payload\n');
-    } else if (mode == ConnectionMode.internet) {
-      _sendMqttRaw(payload);
-    }
   }
 
-  void sendModeAccepted(GameMode gameMode) {
-    final payload = jsonEncode({
-      'type': 'mode_accepted',
-      'mode': _gameModeToWire(gameMode),
+  void _sendFirebase(String payload) {
+    _roomRef?.child('messages').push().set({
+      'from': _myKey,
+      'payload': payload,
     });
+  }
+
+  // ─── Unified Send ──────────────────────────────────────────────────────────
+
+  void _send(Map<String, dynamic> data) {
+    final payload = jsonEncode(data);
     if (mode == ConnectionMode.lan) {
       _socket?.write('$payload\n');
     } else if (mode == ConnectionMode.internet) {
-      _sendMqttRaw(payload);
+      _sendFirebase(payload);
     }
   }
 
-  void sendSurrender() {
-    final payload = jsonEncode({'type': 'surrender'});
-    if (mode == ConnectionMode.lan) {
-      _socket?.write('$payload\n');
-    } else if (mode == ConnectionMode.internet) {
-      _sendMqttRaw(payload);
+  void sendMove(Move move) => _send(move.toJson());
+
+  void sendSelectedMode(GameMode gameMode) => _send({
+        'type': 'mode_selected',
+        'mode': _gameModeToWire(gameMode),
+      });
+
+  void sendModeAccepted(GameMode gameMode) => _send({
+        'type': 'mode_accepted',
+        'mode': _gameModeToWire(gameMode),
+      });
+
+  void sendSurrender() => _send({'type': 'surrender'});
+
+  void sendCoinFlip(int winner) => _send({'type': 'coin_flip', 'winner': winner});
+
+  // ─── Message Dispatch ─────────────────────────────────────────────────────
+
+  void _dispatchMessage(Map<String, dynamic> json) {
+    final type = json['type'];
+    final gm = _gameModeFromWire(json['mode'] as String?);
+
+    if (type == 'mode_selected') {
+      if (gm != null) _modeController.add(gm);
+    } else if (type == 'mode_accepted') {
+      if (gm != null) _modeAcceptedController.add(gm);
+    } else if (type == 'surrender') {
+      _surrenderController.add(null);
+    } else if (type == 'coin_flip') {
+      final winner = json['winner'];
+      if (winner != null) _coinFlipController.add((winner as num).toInt());
+    } else if (json.containsKey('row') &&
+        json.containsKey('col') &&
+        json.containsKey('player')) {
+      _moveController.add(Move(
+        row: (json['row'] as num).toInt(),
+        col: (json['col'] as num).toInt(),
+        player: (json['player'] as num).toInt(),
+        isBlock: json['isBlock'] as bool? ?? false,
+      ));
     }
-  }
-
-  void sendCoinFlip(int winner) {
-    final payload = jsonEncode({'type': 'coin_flip', 'winner': winner});
-    if (mode == ConnectionMode.lan) {
-      _socket?.write('$payload\n');
-    } else if (mode == ConnectionMode.internet) {
-      _sendMqttRaw(payload);
-    }
-  }
-
-  void _handleIncomingPayload(String raw) {
-    final payload = raw.trim();
-    if (payload.isEmpty) return;
-
-    if (payload == 'JOINED') {
-      if (isHost) _statusController.add('connected');
-      return;
-    }
-
-    try {
-      final json = jsonDecode(payload) as Map<String, dynamic>;
-      final type = json['type'];
-      final modeName = json['mode'] as String?;
-      final mode = _gameModeFromWire(modeName);
-      if (type == 'mode_selected') {
-        if (mode != null) _modeController.add(mode);
-        return;
-      }
-      if (type == 'mode_accepted') {
-        if (mode != null) _modeAcceptedController.add(mode);
-        return;
-      }
-      if (type == 'surrender') {
-        _surrenderController.add(null);
-        return;
-      }
-      if (type == 'coin_flip') {
-        final winner = json['winner'] as int?;
-        if (winner != null) _coinFlipController.add(winner);
-        return;
-      }
-      if (json.containsKey('row') &&
-          json.containsKey('col') &&
-          json.containsKey('player')) {
-        _moveController.add(Move.fromJson(json));
-      }
-    } catch (_) {}
   }
 
   String _gameModeToWire(GameMode mode) {
@@ -303,8 +278,8 @@ class NetworkService {
     }
   }
 
-  GameMode? _gameModeFromWire(String? modeName) {
-    switch (modeName) {
+  GameMode? _gameModeFromWire(String? name) {
+    switch (name) {
       case 'normal':
         return GameMode.normal;
       case 'fourDirections':
@@ -321,7 +296,11 @@ class NetworkService {
     _socket?.destroy();
     _server?.close();
 
-    _mqttClient?.disconnect();
+    _messagesSub?.cancel();
+    _joinedSub?.cancel();
+    if (mode == ConnectionMode.internet) {
+      _roomRef?.remove(); // best-effort: delete room data on exit
+    }
 
     _moveController.close();
     _modeController.close();
