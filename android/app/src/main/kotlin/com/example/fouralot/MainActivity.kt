@@ -1,4 +1,4 @@
-package it.smithing_things.fouralot
+package mf.smithings_things.fouralot
 
 import io.flutter.embedding.android.FlutterActivity
 
