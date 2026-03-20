@@ -30,6 +30,22 @@ class AppLocalizations {
   String get vsComputerSubtitle =>
       _it ? "Gioca contro l'intelligenza artificiale" : 'Play against AI';
 
+  String get infoTitle => _it ? 'Informazioni' : 'Information';
+  String get bugRequestTitle => _it
+      ? 'Vuoi scoprire le altre nostre app, segnalare un bug o richiedere feature?'
+      : 'Do you want to discover our other apps, report a bug, or request a feature?';
+  String get joinDiscordTitle =>
+      _it ? 'Vieni a trovarci su' : 'Join us on';
+  String get discordButton => _it ? 'Apri Discord' : 'Open Discord';
+  String get sendEmailTitle =>
+      _it ? 'O inviaci una mail a' : 'Or send us an email at';
+  String get supportEmail => 'smithingthings@gmail.com';
+  String get supportSubject => _it ? 'Supporto 4alot' : '4alot Support';
+  String urlError(String target) =>
+      _it ? 'Impossibile aprire: $target' : 'Unable to open: $target';
+  String get discordUrl => 'https://discord.gg/D9GNQQFYMG';
+  String get privacyTitle => _it ? 'Privacy' : 'Privacy';
+
   String get onlineConnectionTitle =>
       _it ? 'CONNESSIONE ONLINE' : 'ONLINE CONNECTION';
   String get yourIpTitle => _it ? 'Il tuo IP' : 'Your IP';
@@ -156,8 +172,7 @@ class AppLocalizations {
   String get coinFlipYouStart => _it ? 'Inizi tu!' : 'You go first!';
   String get coinFlipOpponentStarts =>
       _it ? "L'avversario inizia!" : 'Opponent goes first!';
-  String get coinFlipAiStarts =>
-      _it ? "L'IA inizia!" : 'The AI goes first!';
+  String get coinFlipAiStarts => _it ? "L'IA inizia!" : 'The AI goes first!';
   String coinFlipPlayerStarts(int player) =>
       _it ? 'Inizia il Giocatore $player!' : 'Player $player goes first!';
 }

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fouralot/screens/connection_screen.dart';
 import 'package:fouralot/screens/game_mode_screen.dart';
+import 'package:fouralot/screens/info_screen.dart';
 import 'package:fouralot/models/game_models.dart';
 import 'package:fouralot/l10n/app_localizations.dart';
 
@@ -22,65 +23,86 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              const Spacer(flex: 2),
-              // Logo
-              _buildLogo(),
-              const Spacer(flex: 2),
-              // Connection mode
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  children: [
-                    Text(
-                      l10n.chooseOpponent,
-                      style: GoogleFonts.orbitron(
-                        color: Colors.white54,
-                        fontSize: 12,
-                        letterSpacing: 3,
-                      ),
+              Column(
+                children: [
+                  const Spacer(flex: 2),
+                  // Logo
+                  _buildLogo(),
+                  const Spacer(flex: 2),
+                  // Connection mode
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      children: [
+                        Text(
+                          l10n.chooseOpponent,
+                          style: GoogleFonts.orbitron(
+                            color: Colors.white54,
+                            fontSize: 12,
+                            letterSpacing: 3,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _ConnectionButton(
+                          icon: Icons.people,
+                          label: l10n.localLabel,
+                          subtitle: l10n.localSubtitle,
+                          color: const Color(0xFFFF6B6B),
+                          delay: 100,
+                          onTap: () => _navigate(context, ConnectionMode.local),
+                        ),
+                        const SizedBox(height: 12),
+                        _ConnectionButton(
+                          icon: Icons.wifi,
+                          label: 'LAN',
+                          subtitle: l10n.lanSubtitle,
+                          color: const Color(0xFF4ECDC4),
+                          delay: 200,
+                          onTap: () => _navigate(context, ConnectionMode.lan),
+                        ),
+                        const SizedBox(height: 12),
+                        _ConnectionButton(
+                          icon: Icons.public,
+                          label: 'INTERNET',
+                          subtitle: l10n.internetSubtitle,
+                          color: const Color(0xFFFBBF24), // an amber/gold color
+                          delay: 250,
+                          onTap: () =>
+                              _navigate(context, ConnectionMode.internet),
+                        ),
+                        const SizedBox(height: 12),
+                        _ConnectionButton(
+                          icon: Icons.smart_toy,
+                          label: l10n.vsComputerLabel,
+                          subtitle: l10n.vsComputerSubtitle,
+                          color: const Color(0xFFA78BFA),
+                          delay: 300,
+                          onTap: () => _navigate(context, ConnectionMode.ai),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 20),
-                    _ConnectionButton(
-                      icon: Icons.people,
-                      label: l10n.localLabel,
-                      subtitle: l10n.localSubtitle,
-                      color: const Color(0xFFFF6B6B),
-                      delay: 100,
-                      onTap: () => _navigate(context, ConnectionMode.local),
+                  ),
+                  const Spacer(flex: 3),
+                ],
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4, right: 8),
+                  child: IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    color: Colors.white70,
+                    tooltip: l10n.infoTitle,
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const InfoScreen()),
                     ),
-                    const SizedBox(height: 12),
-                    _ConnectionButton(
-                      icon: Icons.wifi,
-                      label: 'LAN',
-                      subtitle: l10n.lanSubtitle,
-                      color: const Color(0xFF4ECDC4),
-                      delay: 200,
-                      onTap: () => _navigate(context, ConnectionMode.lan),
-                    ),
-                    const SizedBox(height: 12),
-                    _ConnectionButton(
-                      icon: Icons.public,
-                      label: 'INTERNET',
-                      subtitle: l10n.internetSubtitle,
-                      color: const Color(0xFFFBBF24), // an amber/gold color
-                      delay: 250,
-                      onTap: () => _navigate(context, ConnectionMode.internet),
-                    ),
-                    const SizedBox(height: 12),
-                    _ConnectionButton(
-                      icon: Icons.smart_toy,
-                      label: l10n.vsComputerLabel,
-                      subtitle: l10n.vsComputerSubtitle,
-                      color: const Color(0xFFA78BFA),
-                      delay: 300,
-                      onTap: () => _navigate(context, ConnectionMode.ai),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              const Spacer(flex: 3),
             ],
           ),
         ),

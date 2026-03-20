@@ -17,6 +17,8 @@ dependencies:
   google_fonts: ^8.0.2
   animate_do: ^4.2.0
   flutter_animate: ^4.5.2
+  flutter_markdown: ^0.7.3
+  url_launcher: ^6.3.1
   firebase_core: ^4.5.0
   firebase_database: ^12.1.4
 
@@ -28,6 +30,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/privacy/
+    - assets/icons/
 
 flutter_launcher_icons:
   android: true
