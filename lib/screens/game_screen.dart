@@ -166,6 +166,9 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _goHome() {
+    if (_isMultiplayer && widget.config.connectionMode == ConnectionMode.internet) {
+      widget.networkService?.dispose();
+    }
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const HomeScreen()),
       (route) => false,
@@ -246,14 +249,7 @@ class _GameScreenState extends State<GameScreen> {
     if (!gs.gameOver) {
       gs.opponentRetired(widget.playerNumber);
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.opponentRetiredVictory),
-          duration: const Duration(milliseconds: 1800),
-        ),
-      );
+    _showInfoToast(l10n.opponentRetiredVictory);
   }
 
   @override
@@ -338,6 +334,24 @@ class _GameScreenState extends State<GameScreen> {
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           duration: const Duration(milliseconds: 1500),
+        ),
+      );
+  }
+
+  void _showInfoToast(String msg) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            msg,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFF4ECDC4).withValues(alpha: 0.9),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(milliseconds: 2000),
         ),
       );
   }
@@ -436,14 +450,7 @@ class _GameScreenState extends State<GameScreen> {
   void _handleRemoteEndMatch() {
     if (!mounted) return;
     final l10n = context.l10n;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.opponentClosedMatch),
-          duration: const Duration(milliseconds: 2000),
-        ),
-      );
+    _showInfoToast(l10n.opponentClosedMatch);
     _goHome();
   }
 

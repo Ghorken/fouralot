@@ -62,27 +62,33 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E)],
+    return WillPopScope(
+      onWillPop: () async {
+        _exitConnectionScreen();
+        return false;
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 32),
-                _buildOnlineSection(),
-                const Spacer(),
-                if (_connected) _buildContinueButton(),
-              ],
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 32),
+                  _buildOnlineSection(),
+                  const Spacer(),
+                  if (_connected) _buildContinueButton(),
+                ],
+              ),
             ),
           ),
         ),
@@ -97,7 +103,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     return Row(
       children: [
         GestureDetector(
-          onTap: () => Navigator.pop(context),
+          onTap: _exitConnectionScreen,
           child: const Icon(Icons.arrow_back_ios, color: Colors.white54),
         ),
         const SizedBox(width: 16),
@@ -313,6 +319,13 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         ),
       ),
     );
+  }
+
+  void _exitConnectionScreen() {
+    if (_status.isNotEmpty || _connected || _networkService.isHost) {
+      _networkService.dispose();
+    }
+    if (mounted) Navigator.pop(context);
   }
 }
 
