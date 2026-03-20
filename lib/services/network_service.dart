@@ -23,6 +23,10 @@ class NetworkService {
       StreamController.broadcast();
   final StreamController<void> _surrenderController =
       StreamController.broadcast();
+  final StreamController<void> _rematchController =
+      StreamController.broadcast();
+  final StreamController<void> _endMatchController =
+      StreamController.broadcast();
   final StreamController<String> _statusController =
       StreamController.broadcast();
   final StreamController<int> _coinFlipController =
@@ -32,6 +36,8 @@ class NetworkService {
   Stream<GameMode> get onModeSelected => _modeController.stream;
   Stream<GameMode> get onModeAccepted => _modeAcceptedController.stream;
   Stream<void> get onSurrender => _surrenderController.stream;
+  Stream<void> get onRematch => _rematchController.stream;
+  Stream<void> get onEndMatch => _endMatchController.stream;
   Stream<String> get onStatus => _statusController.stream;
   Stream<int> get onCoinFlip => _coinFlipController.stream;
 
@@ -240,6 +246,9 @@ class NetworkService {
 
   void sendCoinFlip(int winner) => _send({'type': 'coin_flip', 'winner': winner});
 
+  void sendRematch() => _send({'type': 'rematch'});
+  void sendEndMatch() => _send({'type': 'end_match'});
+
   // ─── Message Dispatch ─────────────────────────────────────────────────────
 
   void _dispatchMessage(Map<String, dynamic> json) {
@@ -252,6 +261,10 @@ class NetworkService {
       if (gm != null) _modeAcceptedController.add(gm);
     } else if (type == 'surrender') {
       _surrenderController.add(null);
+    } else if (type == 'rematch') {
+      _rematchController.add(null);
+    } else if (type == 'end_match') {
+      _endMatchController.add(null);
     } else if (type == 'coin_flip') {
       final winner = json['winner'];
       if (winner != null) _coinFlipController.add((winner as num).toInt());
@@ -306,6 +319,8 @@ class NetworkService {
     _modeController.close();
     _modeAcceptedController.close();
     _surrenderController.close();
+    _rematchController.close();
+    _endMatchController.close();
     _statusController.close();
     _coinFlipController.close();
   }

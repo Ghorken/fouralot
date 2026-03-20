@@ -12,6 +12,7 @@ import 'package:fouralot/services/network_service.dart';
 import 'package:fouralot/services/ai_service.dart';
 import 'package:fouralot/widgets/game_board.dart';
 import 'package:fouralot/l10n/app_localizations.dart';
+import 'package:fouralot/screens/home_screen.dart';
 
 class GameScreen extends StatefulWidget {
   final GameConfig config;
@@ -31,6 +32,8 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   StreamSubscription<Move>? _moveSub;
   StreamSubscription<void>? _surrenderSub;
+  StreamSubscription<void>? _rematchSub;
+  StreamSubscription<void>? _endMatchSub;
   bool _blockMode = false; // true when player wants to place a block
   bool _aiLevelAwarded = false;
   late GameState _gameState;
@@ -133,7 +136,7 @@ class _GameScreenState extends State<GameScreen> {
                         }
                         gs.abandonGame();
                         Navigator.pop(dialogContext);
-                        Navigator.pop(context);
+                        _goHome();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF6B6B),
@@ -162,6 +165,13 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  void _goHome() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -176,6 +186,12 @@ class _GameScreenState extends State<GameScreen> {
       _moveSub = widget.networkService!.onMove.listen(_applyRemote);
       _surrenderSub = widget.networkService!.onSurrender.listen((_) {
         _applyRemoteSurrender();
+      });
+      _rematchSub = widget.networkService!.onRematch.listen((_) {
+        _handleRemoteRematch();
+      });
+      _endMatchSub = widget.networkService!.onEndMatch.listen((_) {
+        _handleRemoteEndMatch();
       });
     }
   }
@@ -244,6 +260,8 @@ class _GameScreenState extends State<GameScreen> {
   void dispose() {
     _moveSub?.cancel();
     _surrenderSub?.cancel();
+    _rematchSub?.cancel();
+    _endMatchSub?.cancel();
     _cancelTurnTimer();
     // Defer reset to next frame: notifyListeners() cannot fire while the tree is locked
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -392,6 +410,41 @@ class _GameScreenState extends State<GameScreen> {
     gs.setStartingPlayer(winner);
     await _showCoinFlipDialog(winner);
     _startTurnTimer();
+  }
+
+  Future<void> _doMultiplayerRematch() async {
+    if (!mounted) return;
+    final gs = context.read<GameState>();
+    _cancelTurnTimer();
+    if (mounted) {
+      setState(() => _blockMode = false);
+    }
+    gs.resetBoard();
+    await _initCoinFlip();
+  }
+
+  void _requestMultiplayerRematch() {
+    widget.networkService?.sendRematch();
+    _doMultiplayerRematch();
+  }
+
+  void _handleRemoteRematch() {
+    if (!mounted) return;
+    _doMultiplayerRematch();
+  }
+
+  void _handleRemoteEndMatch() {
+    if (!mounted) return;
+    final l10n = context.l10n;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l10n.opponentClosedMatch),
+          duration: const Duration(milliseconds: 2000),
+        ),
+      );
+    _goHome();
   }
 
   /// Schedules the AI move after a short delay for a natural feel.
@@ -860,29 +913,33 @@ class _GameScreenState extends State<GameScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  if (_isMultiplayer) {
+                    widget.networkService?.sendEndMatch();
+                  }
+                  _goHome();
+                },
                 child: Text(l10n.menu, style: const TextStyle(color: Colors.white54, letterSpacing: 2)),
               ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: _isAiMode
-                    ? _startNextAiMatch
-                    : _isMultiplayer
-                        ? () {
-                            gs.resetBoard();
-                            if (_isMyTurn) _startTurnTimer();
-                          }
-                        : () => _doLocalRematch(gs),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: color,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              if (!gs.endedBySurrender) ...[
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: _isAiMode
+                      ? _startNextAiMatch
+                      : _isMultiplayer
+                          ? _requestMultiplayerRematch
+                          : () => _doLocalRematch(gs),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text(
+                    _isAiMode ? l10n.newMatch : l10n.rematch,
+                    style: GoogleFonts.orbitron(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 2),
+                  ),
                 ),
-                child: Text(
-                  _isAiMode ? l10n.newMatch : l10n.rematch,
-                  style: GoogleFonts.orbitron(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 2),
-                ),
-              ),
+              ],
             ],
           ),
         ],

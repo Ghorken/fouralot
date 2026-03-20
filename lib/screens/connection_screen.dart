@@ -23,6 +23,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   String? _localIp;
   final TextEditingController _ipController = TextEditingController();
   int _playerNumber = 1;
+  bool _didNavigateToMode = false;
   StreamSubscription? _statusSub;
 
   @override
@@ -41,6 +42,13 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           _connected = true;
           _playerNumber = _networkService.playerNumber;
         });
+        if (!_didNavigateToMode) {
+          _didNavigateToMode = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _goToGameMode();
+          });
+        }
       }
     });
   }
@@ -210,7 +218,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           icon: Icons.link,
           color: isInternet ? const Color(0xFFFBBF24) : const Color(0xFF4ECDC4),
           loading: _loading && !_networkService.isHost,
-          onTap: _status.isEmpty ? _connectOnline : null,
+          onTap: _loading ? null : _connectOnline,
         ),
         if (_status.isNotEmpty) ...[
           const SizedBox(height: 16),

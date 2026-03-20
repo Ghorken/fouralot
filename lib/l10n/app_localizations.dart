@@ -133,6 +133,9 @@ class AppLocalizations {
   String get opponentRetiredVictory => _it
       ? "L'avversario si è ritirato. Vittoria assegnata."
       : 'The opponent surrendered. Victory awarded.';
+  String get opponentClosedMatch => _it
+      ? "L'avversario ha rinunciato alla sfida e ha chiuso la connessione."
+      : 'Your opponent gave up the match and closed the connection.';
   String get invalidColumn => _it
       ? "Colonna piena, scegli un'altra colonna"
       : 'Column is full, choose another one';

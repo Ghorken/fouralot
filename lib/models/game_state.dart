@@ -17,6 +17,7 @@ class GameState extends ChangeNotifier {
   int blocksRemaining1 = 3;
   int blocksRemaining2 = 3;
   List<List<int>> winningCells = [];
+  bool endedBySurrender = false;
   final Map<GameMode, int> _aiLevels = {
     GameMode.normal: 1,
     GameMode.fourDirections: 1,
@@ -40,6 +41,7 @@ class GameState extends ChangeNotifier {
   void abandonGame() {
     winner = currentPlayer == 1 ? 2 : 1;
     gameOver = true;
+    endedBySurrender = true;
     notifyListeners();
   }
 
@@ -48,6 +50,7 @@ class GameState extends ChangeNotifier {
     winner = localPlayer;
     gameOver = true;
     winningCells = [];
+    endedBySurrender = true;
     notifyListeners();
   }
 
@@ -64,6 +67,7 @@ class GameState extends ChangeNotifier {
     blocksRemaining1 = 3;
     blocksRemaining2 = 3;
     winningCells = [];
+    endedBySurrender = false;
     notifyListeners();
   }
 
@@ -283,8 +287,21 @@ class GameState extends ChangeNotifier {
       }
       _checkAfterMove();
     } else {
-      _placeCell(move.row, move.col,
-          move.player == 1 ? CellContent.player1 : CellContent.player2);
+      if (config?.gameMode == GameMode.normal) {
+        final row = _findLowestEmpty(move.col);
+        if (row == -1) return;
+        _placeCell(
+          row,
+          move.col,
+          move.player == 1 ? CellContent.player1 : CellContent.player2,
+        );
+      } else {
+        _placeCell(
+          move.row,
+          move.col,
+          move.player == 1 ? CellContent.player1 : CellContent.player2,
+        );
+      }
     }
   }
 }
