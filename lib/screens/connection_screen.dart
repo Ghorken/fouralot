@@ -24,6 +24,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   final TextEditingController _ipController = TextEditingController();
   int _playerNumber = 1;
   bool _didNavigateToMode = false;
+  bool _didCleanup = false;
   StreamSubscription? _statusSub;
 
   @override
@@ -62,10 +63,12 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        _exitConnectionScreen();
-        return false;
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          _cleanupConnection();
+        }
       },
       child: Scaffold(
         body: Container(
@@ -322,10 +325,16 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   void _exitConnectionScreen() {
+    if (!mounted) return;
+    Navigator.of(context).maybePop();
+  }
+
+  void _cleanupConnection() {
+    if (_didCleanup) return;
+    _didCleanup = true;
     if (_status.isNotEmpty || _connected || _networkService.isHost) {
       _networkService.dispose();
     }
-    if (mounted) Navigator.pop(context);
   }
 }
 
