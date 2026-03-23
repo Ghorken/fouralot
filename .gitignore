@@ -1,45 +1,155 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# ==============================================================================
+# SEGRETI & CONFIGURAZIONI SENSIBILI — non committare MAI
+# ==============================================================================
 
-# IntelliJ related
+# Firebase - Android
+google-services.json
+
+# Firebase - iOS/macOS
+GoogleService-Info.plist
+
+# FlutterFire CLI output (contiene API keys in chiaro)
+lib/firebase_options.dart
+
+# Variabili d'ambiente e file segreti custom
+.env
+.env.*
+*.env
+secrets.dart
+secrets.json
+config/secrets/
+
+# Keystore Android (firma dell'app)
+*.jks
+*.keystore
+android/key.properties
+
+# Credenziali Google Play / App Store
+*.p12
+*.p8
+*.mobileprovision
+
+
+# ==============================================================================
+# DART & FLUTTER — file generati automaticamente
+# ==============================================================================
+
+# Dipendenze risolte (si rigenerano con `flutter pub get`)
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+pubspec.lock        # Rimuovi questo commento se vuoi bloccare le versioni (consigliato per app)
+
+# Plugin Flutter risolti
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Build output
+build/
+
+
+# ==============================================================================
+# ANDROID
+# ==============================================================================
+
+# Gradle
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/gradle/wrapper/gradle-wrapper.jar
+
+# Path locali della SDK (specifici per ogni macchina)
+android/local.properties
+
+# File generati
+android/app/google-services.json    # Doppia sicurezza
+
+
+# ==============================================================================
+# iOS
+# ==============================================================================
+
+# CocoaPods
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# Xcode
+ios/Runner.xcworkspace/xcuserdata/
+*.xcuserstate
+ios/.generated/
+
+
+# ==============================================================================
+# macOS
+# ==============================================================================
+
+macos/Pods/
+macos/.symlinks/
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+
+# ==============================================================================
+# WEB
+# ==============================================================================
+
+lib/generated_plugin_registrant.dart
+
+
+# ==============================================================================
+# IDE & EDITOR
+# ==============================================================================
+
+# IntelliJ / Android Studio
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code
+.vscode/
+!.vscode/extensions.json   # Questo è utile da condividere
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
+# Vim/Emacs swap
+*.swp
+*.swo
+*~
 
-# Symbolication related
-app.*.symbols
 
-# Obfuscation related
-app.*.map.json
+# ==============================================================================
+# SISTEMA OPERATIVO
+# ==============================================================================
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+
+# ==============================================================================
+# DART — file generati da build_runner / code gen
+# ==============================================================================
+
+# Decommenta se NON vuoi versionare i file generati da build_runner
+# *.g.dart
+# *.freezed.dart
+# *.gr.dart
+
+
+# ==============================================================================
+# COVERAGE & TEST OUTPUT
+# ==============================================================================
+
+coverage/
+test-results/
